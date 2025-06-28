@@ -8,9 +8,13 @@ import cu.axel.smartdock.R
 class DockLayoutDialog(context: Context) : MaterialAlertDialogBuilder(context) {
     init {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+
         val editor = sharedPreferences.edit()
+
         setTitle(R.string.choose_dock_layout)
+
         val layout = sharedPreferences.getInt("dock_layout", -1)
+
         setSingleChoiceItems(R.array.layouts, layout) { _, which ->
             editor.putBoolean("enable_nav_back", which != 0)
             editor.putBoolean("enable_nav_home", which != 0)

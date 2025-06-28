@@ -8,6 +8,7 @@ import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.app.ApplicationErrorReport.BatteryInfo
 import android.app.Notification
+import android.app.usage.UsageStatsManager
 import android.bluetooth.BluetoothManager
 import android.content.ActivityNotFoundException
 import android.content.BroadcastReceiver
@@ -186,6 +187,8 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         }
     }
 
+
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         Utils.startupTime = System.currentTimeMillis()
@@ -240,7 +243,6 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         })
         dock.setOnTouchListener(this)
         dockLayout.setOnTouchListener(this)
-        dockHandle.alpha = sharedPreferences.getString("handle_opacity", "0.5")!!.toFloat()
         dockHandle.setOnClickListener { pinDock() }
         appsBtn.setOnClickListener { toggleAppMenu() }
         appsBtn.setOnLongClickListener {
@@ -960,6 +962,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
                                 sharedPreferences.getString("dock_activation_area", "10")!!.toInt()
                             dockLayoutParams.height = Utils.dpToPx(context, height)
                             windowManager.updateViewLayout(dock, dockLayoutParams)
+                            dockHandle.visibility = View.VISIBLE
                         } else {
                             dock.visibility = View.GONE
                             dockHandle.visibility = View.VISIBLE
@@ -1501,18 +1504,52 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         }
     }
 
+
+
+
+
+
+
+
+
+
     private fun updateActivationMethod() {
         if (!isPinned) {
             val method = sharedPreferences.getString("activation_method", "swipe")
             if (method == "swipe") {
+
                 dockHandle.visibility = View.GONE
                 updateDockTrigger()
                 dock.visibility = View.VISIBLE
             } else {
+                updateHandlePosition()
                 dock.visibility = View.GONE
                 dockHandle.visibility = View.VISIBLE
+
+
+
+
+
+
+
             }
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     }
 
     private fun updateDockHeight() {
@@ -1889,19 +1926,17 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     private fun updateHandlePositionValues() {
         val position = sharedPreferences.getString("handle_position", "start")
         handleLayoutParams.gravity =
-            Gravity.BOTTOM or if (position == "start") Gravity.START else Gravity.END
+            Gravity.BOTTOM or Gravity.CENTER
         if (position == "end") {
-            dockHandle.setBackgroundResource(R.drawable.dock_handle_bg_end)
             dockHandle.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                R.drawable.ic_expand_left,
+                R.drawable.rect,
                 0,
                 0,
                 0
             )
         } else {
-            dockHandle.setBackgroundResource(R.drawable.dock_handle_bg_start)
             dockHandle.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                R.drawable.ic_expand_right,
+                R.drawable.rect,
                 0,
                 0,
                 0

@@ -130,6 +130,8 @@ open class LauncherActivity : AppCompatActivity(), OnAppClickListener,
         if (sharedPreferences.getString("icon_pack", "")!!.isNotEmpty()) {
             iconPackUtils = IconPackUtils(this)
         }
+
+        launchApp("null", "com.google.android.youtube")
     }
 
     fun loadDesktopApps() {
@@ -137,34 +139,6 @@ open class LauncherActivity : AppCompatActivity(), OnAppClickListener,
             this,
             AppUtils.getPinnedApps(this, AppUtils.DESKTOP_LIST), this, true, iconPackUtils
         )
-    }
-
-    override fun onResume() {
-        super.onResume()
-        sendBroadcast(
-            Intent(LAUNCHER_ACTION)
-                .setPackage(packageName)
-                .putExtra("action", LAUNCHER_RESUMED)
-        )
-
-        serviceBtn.visibility =
-            if (DeviceUtils.isAccessibilityServiceEnabled(this)) View.GONE else View.VISIBLE
-
-        loadDesktopApps()
-
-        if (sharedPreferences.getBoolean("show_notes", false)) {
-            notesEt.visibility = View.VISIBLE
-            loadNotes()
-        } else
-            notesEt.visibility = View.GONE
-
-        appsGv.requestFocus()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        if (sharedPreferences.getBoolean("show_notes", false))
-            saveNotes()
     }
 
     @SuppressLint("MissingSuperCall")
@@ -358,11 +332,11 @@ open class LauncherActivity : AppCompatActivity(), OnAppClickListener,
     }
 
     override fun onAppClicked(app: App, item: View) {
-        launchApp(null, app.packageName)
+        launchApp("fullscreen", app.packageName)
     }
 
     override fun onAppLongClicked(app: App, item: View) {
-        showAppContextMenu(app, item)
+        //showAppContextMenu(app, item)
     }
 
     override fun onSharedPreferenceChanged(

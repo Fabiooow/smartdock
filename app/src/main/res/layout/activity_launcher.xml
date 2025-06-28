@@ -29,20 +29,6 @@
         android:layout_height="match_parent"
         android:layout_weight="1.0"
         android:gravity="end"
-        android:orientation="vertical">
-
-        <EditText
-            android:id="@+id/notes_et"
-            android:layout_width="230dp"
-            android:layout_height="260dp"
-            android:layout_margin="10dp"
-            android:background="@drawable/notes_background"
-            android:ems="10"
-            android:gravity="start"
-            android:inputType="textMultiLine"
-            android:padding="10dp"
-            android:textColor="#FF121212"
-            android:textSize="17sp" />
-    </LinearLayout>
+        android:orientation="vertical"/>
 
 </LinearLayout>
