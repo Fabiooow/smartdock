@@ -6,8 +6,8 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.annotation.SuppressLint
 import android.app.ActivityManager
-import android.app.ApplicationErrorReport.BatteryInfo
 import android.app.Notification
+import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
 import android.bluetooth.BluetoothManager
 import android.content.ActivityNotFoundException
@@ -28,12 +28,12 @@ import android.hardware.usb.UsbManager
 import android.media.AudioManager
 import android.net.Uri
 import android.net.wifi.WifiManager
-import android.os.BatteryManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
 import android.provider.Settings
+import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.Display
 import android.view.GestureDetector
@@ -102,6 +102,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.UnsupportedEncodingException
 import java.net.URLEncoder
+import java.util.SortedMap
+import java.util.TreeMap
 
 const val DOCK_SERVICE_CONNECTED = "service_connected"
 const val ACTION_TAKE_SCREENSHOT = "take_screenshot"
@@ -190,6 +192,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
 
     override fun onServiceConnected() {
+        Log.i("Test", "executed")
         super.onServiceConnected()
         Utils.startupTime = System.currentTimeMillis()
         systemApp = AppUtils.isSystemApp(context, packageName)
@@ -653,6 +656,12 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
             return
 
         if (event.eventType == AccessibilityEvent.TYPE_WINDOWS_CHANGED) {
+
+            //Log.i("Olaaameuuu", event.packageName.toString())
+
+
+
+
             if (Build.VERSION.SDK_INT >= 28)
                 if (event.windowChanges.and(AccessibilityEvent.WINDOWS_CHANGE_REMOVED) == AccessibilityEvent.WINDOWS_CHANGE_REMOVED ||
                     event.windowChanges.and(
@@ -671,6 +680,11 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
             val app = event.packageName.toString()
             showToast(app, text)
         }
+
+
+
+
+
     }
 
     private fun showToast(app: String, text: String) {
@@ -1579,49 +1593,84 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         pinnedApps = AppUtils.getPinnedApps(context, AppUtils.DOCK_PINNED_LIST)
     }
 
+
+    val whiteListedApps = arrayOf(
+        "com.google.android.youtube",
+        "com.google.android.gm",
+        "com.google.android.calendar",
+        "com.google.android.googlequicksearchbox",
+        "com.google.android.apps.messaging"
+    )
+
+    fun getForegroundApp() : String {
+        var currentApp = "NULL"
+        // You can delete the if-else statement if you don't care about Android versions
+        // lower than 5.0. Just keep the code that is inside the if and delete the one
+        // inside the else statement.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            val usm = this.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+            val time = System.currentTimeMillis()
+            val appList =
+                usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, time - 1000 * 1000, time)
+            if (appList != null && appList.size > 0) {
+                val mySortedMap: SortedMap<Long, UsageStats> =
+                    TreeMap<Long, UsageStats>()
+                for (usageStats in appList) {
+                    mySortedMap.put(usageStats.lastTimeUsed, usageStats)
+                }
+                if (mySortedMap != null && !mySortedMap.isEmpty()) {
+                    currentApp = mySortedMap.get(mySortedMap.lastKey())!!.getPackageName()
+                }
+            }
+        } else {
+            val am = this.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+            val tasks = am.runningAppProcesses
+            currentApp = tasks[0].processName
+        }
+        // Get only the app name name
+        //return currentApp.split(".").last()
+
+        return currentApp
+    }
+
+
+
+
+    fun checkAndLaunchDefaultApp() {
+        val foregroundApp = getForegroundApp()
+
+        Log.i("OpenApp", foregroundApp)
+
+        if(!whiteListedApps.contains(foregroundApp)){
+            launchApp("null", whiteListedApps[0])
+        }
+
+    }
+
+
+
+
+
+
     private fun updateRunningTasks() {
-        val now = System.currentTimeMillis()
-        if (now - lastUpdate < 500)
-            return
-        lastUpdate = now
+
+        checkAndLaunchDefaultApp()
+
 
         val apps = ArrayList<DockApp>()
-        pinnedApps.forEach { pinnedApp ->
-            apps.add(DockApp(pinnedApp.name, pinnedApp.packageName, pinnedApp.icon))
+
+        val installedAppsUm = AppUtils.getInstalledApps(context)
+
+        installedAppsUm.forEach{app ->
+            if(whiteListedApps.contains(app.packageName)){
+                apps.add(DockApp(app.name, app.packageName, app.icon))
+            }
         }
 
         val gridSize = Utils.dpToPx(context, 52)
 
-        //TODO: We can eliminate another for
-        //TODO: Don't do anything if tasks has not changed
-        val nApps =
-            if (orientation == Configuration.ORIENTATION_PORTRAIT) maxApps else maxAppsLandscape
-        if (systemApp) {
-            tasks = AppUtils.getRunningTasks(activityManager, packageManager, nApps)
-            for (j in 1..tasks.size) {
-                val task = tasks[tasks.size - j]
-                val index = AppUtils.containsTask(apps, task)
-                if (index != -1)
-                    apps[index].addTask(task)
-                else
-                    apps.add(DockApp(task))
-            }
-        } else {
-            tasks = AppUtils.getRecentTasks(context, nApps)
-            tasks.reversed().forEach { task ->
-                val index = AppUtils.containsTask(apps, task)
-                if (index == -1)
-                    apps.add(DockApp(task))
-            }
-        }
-
         tasksGv.layoutParams.width = gridSize * apps.size
         tasksGv.adapter = DockAppAdapter(context, apps, this, iconPackUtils)
-        //TODO: Move context outta here
-        wifiBtn.setImageResource(if (wifiManager.isWifiEnabled) R.drawable.ic_wifi_on else R.drawable.ic_wifi_off)
-        val bluetoothAdapter = bluetoothManager.adapter
-        if (bluetoothAdapter != null)
-            bluetoothBtn.setImageResource(if (bluetoothAdapter.isEnabled) R.drawable.ic_bluetooth else R.drawable.ic_bluetooth_off)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
