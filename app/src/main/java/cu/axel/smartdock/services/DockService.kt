@@ -652,6 +652,8 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
+        checkAndLaunchDefaultApp()
+
         if (!isPinned)
             return
 
@@ -1643,6 +1645,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
         if(!whiteListedApps.contains(foregroundApp)){
             launchApp("null", whiteListedApps[0])
+            hideDock(500)
         }
 
     }

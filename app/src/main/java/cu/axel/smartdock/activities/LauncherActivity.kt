@@ -68,7 +68,7 @@ open class LauncherActivity : AppCompatActivity(), OnAppClickListener,
         serviceBtn = findViewById(R.id.service_btn)
         appsGv = findViewById(R.id.desktop_apps_gv)
         appsGv.layoutManager = GridLayoutManager(this, 2)
-        notesEt = findViewById(R.id.notes_et)
+        //notesEt = findViewById(R.id.notes_et)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
         serviceBtn
             .setOnClickListener { startActivity(Intent(this, MainActivity::class.java)) }
