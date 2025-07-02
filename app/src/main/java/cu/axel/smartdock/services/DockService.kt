@@ -174,9 +174,6 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     private var iconPackUtils: IconPackUtils? = null
     override fun onCreate() {
         super.onCreate()
-
-        DeviceUtils.setUpDevice()
-
         db = DBHelper(this)
         activityManager = getSystemService(ACTIVITY_SERVICE) as ActivityManager
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
@@ -938,34 +935,45 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     }
 
     private fun togglePin() {
-        if (isPinned) unpinDock() else pinDock()
+        unpinDock()
     }
 
     private fun showDock() {
-        dock.visibility = View.VISIBLE
-        dockHandle.visibility = View.GONE
-
-        if (dockLayoutParams.height != dockHeight) {
-            dockLayoutParams.height = dockHeight
-            windowManager.updateViewLayout(dock, dockLayoutParams)
-        }
-
         dockHandler.removeCallbacksAndMessages(null)
-        updateRunningTasks()
-        val anim = AnimationUtils.loadAnimation(context, R.anim.slide_up)
-        dockLayout.visibility = View.VISIBLE
-        dockLayout.startAnimation(anim)
+
+            if (!isPinned) {
+                val animation = AnimationUtils.loadAnimation(context, R.anim.slide_down)
+                animation.setAnimationListener(object : Animation.AnimationListener {
+                    override fun onAnimationStart(p1: Animation) {}
+                    override fun onAnimationEnd(p1: Animation) {
+                        dockLayout.visibility = View.GONE
+                        if (sharedPreferences.getString("activation_method", "swipe") == "swipe") {
+                            val height =
+                                sharedPreferences.getString("dock_activation_area", "10")!!.toInt()
+                            dockLayoutParams.height = Utils.dpToPx(context, height)
+                            windowManager.updateViewLayout(dock, dockLayoutParams)
+                            dockHandle.visibility = View.VISIBLE
+                        } else {
+                            dock.visibility = View.GONE
+                            dockHandle.visibility = View.VISIBLE
+                        }
+                    }
+
+                    override fun onAnimationRepeat(p1: Animation) {}
+                })
+                dockLayout.startAnimation(animation)
+            }
     }
 
     fun pinDock() {
-        isPinned = true
-        pinBtn.setImageResource(R.drawable.ic_pin)
-        if (dockLayout.visibility == View.GONE)
-            showDock()
+        //pinBtn.setImageResource(R.drawable.ic_unpin)
+        isPinned = false
+        if (dockLayout.visibility == View.VISIBLE)
+            hideDock(500)
     }
 
     private fun unpinDock() {
-        pinBtn.setImageResource(R.drawable.ic_unpin)
+        //pinBtn.setImageResource(R.drawable.ic_unpin)
         isPinned = false
         if (dockLayout.visibility == View.VISIBLE)
             hideDock(500)
@@ -1543,11 +1551,11 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
                 dockHandle.visibility = View.GONE
                 updateDockTrigger()
-                dock.visibility = View.VISIBLE
+                dock.visibility = View.GONE
             } else {
                 updateHandlePosition()
                 dock.visibility = View.GONE
-                dockHandle.visibility = View.VISIBLE
+                dockHandle.visibility = View.GONE
 
 
 
@@ -1604,15 +1612,12 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
 
     val whiteListedApps = arrayOf(
-        "com.google.android.youtube",
-        "com.google.android.gm",
-        "com.google.android.calendar",
-        "com.google.android.googlequicksearchbox",
-        "com.google.android.apps.messaging"
+        "is.xyz.mpv"
     )
 
     fun getForegroundApp() : String {
         var currentApp = "NULL"
+        unpinDock()
         // You can delete the if-else statement if you don't care about Android versions
         // lower than 5.0. Just keep the code that is inside the if and delete the one
         // inside the else statement.
@@ -1645,28 +1650,25 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
 
 
-
+    //refazer para que nao esteja a correr que nem um cuazy
+    var lastCheckedApp: String? = null
 
     fun checkAndLaunchDefaultApp() {
-
-
-
         val foregroundApp = getForegroundApp()
+
+        if (foregroundApp == lastCheckedApp) return  // evita repetição
+
+        lastCheckedApp = foregroundApp
 
         Log.i("OpenApp", foregroundApp)
 
-        if(!whiteListedApps.contains(foregroundApp)){
+        if (!whiteListedApps.contains(foregroundApp)) {
             launchApp("null", whiteListedApps[0])
             hideDock(500)
         }
-
     }
 
 
-    private fun setup(){
-        launchApp("null", whiteListedApps[0])
-        hideDock(500)
-    }
 
 
 
@@ -1681,7 +1683,6 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         val installedAppsUm = AppUtils.getInstalledApps(context)
 
         installedAppsUm.forEach{app ->
-            Log.i("App", app.packageName)
             if(whiteListedApps.contains(app.packageName)){
                 apps.add(DockApp(app.name, app.packageName, app.icon))
             }
