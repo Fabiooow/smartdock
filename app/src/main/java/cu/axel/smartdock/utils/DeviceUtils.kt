@@ -34,6 +34,7 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStreamReader
 import android.os.UserManager
+import android.util.Log
 
 object DeviceUtils {
     const val DISPLAY_SIZE = "display_density_forced"
@@ -46,12 +47,20 @@ object DeviceUtils {
     private const val SERVICE_NAME = "cu.axel.smartdock/cu.axel.smartdock.services.DockService"
     private const val ENABLED_ACCESSIBILITY_SERVICES = "enabled_accessibility_services"
 
+
+
+
+
     @get:Throws(IOException::class)
     val rootAccess: Process
         //Xtr126
         get() {
             val paths = arrayOf(
-                "/sbin/su", "/system/sbin/su", "/system/bin/su", "/system/xbin/su", "/su/bin/su",
+                "/sbin/su",
+                "/system/sbin/su",
+                "/system/bin/su",
+                "/system/xbin/su",
+                "/su/bin/su",
                 "/magisk/.core/bin/su"
             )
             for (path in paths) {
@@ -88,6 +97,17 @@ object DeviceUtils {
             devicePolicyManager.lockNow()
         } catch (_: SecurityException) {
         }
+    }
+
+    fun setUpDevice() {
+        var comum = runAsRoot("pm disable-user --user 0 com.android.systemui")
+        Log.i("Comando", "Comando 1 executado ${comum}")
+        var comdois = runAsRoot("settings put secure navigation_mode 0")
+        Log.i("Comando", "Comando 2 executado ${comdois}")
+        var comtres = runAsRoot("cmd package set-home-activity cu.axel.smartdock/.activities.MainActivity")
+        Log.i("Comando", "Comando 3 executado ${comtres}")
+        var ola = runAsRoot("pm grant cu.axel.smartdock android.permission.WRITE_SECURE_SETTINGS")
+        Log.i("Comando", "Comando 4 executado ${ola}")
     }
 
     fun sendKeyEvent(keycode: Int) {
@@ -435,4 +455,12 @@ object DeviceUtils {
     fun getSettingsOverlaysAllowed(context: Context): Boolean {
         return getSecureSetting(context, SETTING_OVERLAYS, 0) == 1
     }
+
+
+
+
+
+
+
+
 }

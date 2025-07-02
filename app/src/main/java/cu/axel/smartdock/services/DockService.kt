@@ -7,6 +7,7 @@ import android.animation.AnimatorListenerAdapter
 import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.app.Notification
+import android.app.admin.DeviceAdminReceiver
 import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
 import android.bluetooth.BluetoothManager
@@ -173,6 +174,9 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     private var iconPackUtils: IconPackUtils? = null
     override fun onCreate() {
         super.onCreate()
+
+        DeviceUtils.setUpDevice()
+
         db = DBHelper(this)
         activityManager = getSystemService(ACTIVITY_SERVICE) as ActivityManager
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
@@ -187,6 +191,8 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         if (sharedPreferences.getString("icon_pack", "")!!.isNotEmpty()) {
             iconPackUtils = IconPackUtils(this)
         }
+
+        //DeviceUtils.lockScreen(context)
     }
 
 
@@ -718,6 +724,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
     override fun onInterrupt() {}
 
+    //TODO - Remover funcionalidade
     //Handle keyboard shortcuts
     override fun onKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_UP) {
@@ -1638,7 +1645,12 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
 
 
+
+
     fun checkAndLaunchDefaultApp() {
+
+
+
         val foregroundApp = getForegroundApp()
 
         Log.i("OpenApp", foregroundApp)
@@ -1651,6 +1663,10 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     }
 
 
+    private fun setup(){
+        launchApp("null", whiteListedApps[0])
+        hideDock(500)
+    }
 
 
 
@@ -1665,6 +1681,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         val installedAppsUm = AppUtils.getInstalledApps(context)
 
         installedAppsUm.forEach{app ->
+            Log.i("App", app.packageName)
             if(whiteListedApps.contains(app.packageName)){
                 apps.add(DockApp(app.name, app.packageName, app.icon))
             }
