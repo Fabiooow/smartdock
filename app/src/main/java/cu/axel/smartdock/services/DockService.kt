@@ -1612,7 +1612,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
 
     val whiteListedApps = arrayOf(
-        "is.xyz.mpv"
+        "com.example.myappum"
     )
 
     fun getForegroundApp() : String {
@@ -1662,10 +1662,10 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
         Log.i("OpenApp", foregroundApp)
 
-        if (!whiteListedApps.contains(foregroundApp)) {
-            launchApp("null", whiteListedApps[0])
-            hideDock(500)
-        }
+        //if (!whiteListedApps.contains(foregroundApp)) {
+        //    launchApp("null", whiteListedApps[0])
+        //    hideDock(500)
+        //}
     }
 
 
