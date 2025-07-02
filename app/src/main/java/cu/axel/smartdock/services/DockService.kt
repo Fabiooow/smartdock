@@ -1597,11 +1597,11 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
 
     val whiteListedApps = arrayOf(
-        "com.google.android.youtube",
-        "com.google.android.gm",
-        "com.google.android.calendar",
-        "com.google.android.googlequicksearchbox",
-        "com.google.android.apps.messaging"
+        "com.example.myappum",
+        "com.example.myappdois",
+        "com.example.myapptres",
+        "com.example.myappquatro",
+        "com.example.myappcinco"
     )
 
     fun getForegroundApp() : String {
@@ -1638,16 +1638,23 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
 
 
+    //refazer para que nao esteja a correr que nem um cuazy
+    var lastCheckedApp: String? = null
+
     fun checkAndLaunchDefaultApp() {
         val foregroundApp = getForegroundApp()
 
+        if (foregroundApp == lastCheckedApp) return  // evita repetição
+
+        unpinDock()
+
+        lastCheckedApp = foregroundApp
+
         Log.i("OpenApp", foregroundApp)
 
-        if(!whiteListedApps.contains(foregroundApp)){
+        if (!whiteListedApps.contains(foregroundApp)) {
             launchApp("null", whiteListedApps[0])
-            hideDock(500)
         }
-
     }
 
 
@@ -1655,7 +1662,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
 
 
-    private fun updateRunningTasks() {
+        private fun updateRunningTasks() {
 
         checkAndLaunchDefaultApp()
 
