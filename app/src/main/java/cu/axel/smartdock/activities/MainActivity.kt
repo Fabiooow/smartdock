@@ -19,7 +19,6 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import cu.axel.smartdock.R
 import cu.axel.smartdock.dialogs.DockLayoutDialog
-import cu.axel.smartdock.fragments.PreferencesFragment
 import cu.axel.smartdock.services.NotificationService
 import cu.axel.smartdock.utils.ColorUtils
 import cu.axel.smartdock.utils.DeviceUtils
@@ -45,9 +44,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.settings_container, PreferencesFragment())
-            .commit()
+
         if (!DeviceUtils.hasStoragePermission(this)) {
             DeviceUtils.requestStoragePermissions(this)
         }

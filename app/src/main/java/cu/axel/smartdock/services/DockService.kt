@@ -167,7 +167,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     private lateinit var context: Context
     private lateinit var tasks: ArrayList<AppTask>
     private var lastUpdate: Long = 0
-    private var dockHeight: Int = 0
+    private var dockHeight: Int = 55
     private lateinit var handleLayoutParams: WindowManager.LayoutParams
     private lateinit var launcherApps: LauncherApps
     private var iconPackUtils: IconPackUtils? = null
@@ -1597,8 +1597,8 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
 
     val whiteListedApps = arrayOf(
-        "com.example.myappum",
         "com.example.myappdois",
+        "com.example.myappum",
         "com.example.myapptres",
         "com.example.myappquatro",
         "com.example.myappcinco"

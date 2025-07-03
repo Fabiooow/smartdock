@@ -19,8 +19,6 @@ import android.widget.Toast
 import androidx.preference.PreferenceManager
 import cu.axel.smartdock.R
 import java.io.BufferedReader
-import java.io.File
-import java.io.FileWriter
 import java.io.IOException
 import java.io.InputStream
 import java.io.InputStreamReader
@@ -35,9 +33,9 @@ object Utils {
 
     //public static int dockHeight;
     fun toggleBuiltinNavigation(editor: SharedPreferences.Editor, value: Boolean) {
-        editor.putBoolean("enable_nav_back", value)
-        editor.putBoolean("enable_nav_home", value)
-        editor.putBoolean("enable_nav_recents", value)
+        editor.putBoolean("enable_nav_back", false)
+        editor.putBoolean("enable_nav_home", false)
+        editor.putBoolean("enable_nav_recents", false)
         editor.commit()
     }
 
@@ -112,17 +110,6 @@ object Utils {
             }
         }
         return R.drawable.battery_empty
-    }
-
-    fun saveLog(context: Context, name: String, log: String) {
-        try {
-            val fw = FileWriter(
-                File(context.getExternalFilesDir(null), name + "_" + currentDateString + ".log")
-            )
-            fw.write(log)
-            fw.close()
-        } catch (_: IOException) {
-        }
     }
 
     fun makeWindowParams(

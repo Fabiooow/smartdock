@@ -1,6 +1,5 @@
 package cu.axel.smartdock.receivers
 
-import android.app.ApplicationErrorReport.BatteryInfo
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
