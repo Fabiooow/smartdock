@@ -36,12 +36,6 @@ import java.io.InputStreamReader
 import android.os.UserManager
 
 object DeviceUtils {
-    const val DISPLAY_SIZE = "display_density_forced"
-    const val ICON_BLACKLIST = "icon_blacklist"
-    const val POLICY_CONTROL = "policy_control"
-    const val IMMERSIVE_APPS = "immersive.status=apps"
-    const val HEADS_UP_ENABLED = "heads_up_notifications_enabled"
-    const val ENABLE_TASKBAR = "enable_taskbar"
     const val SETTING_OVERLAYS = "secure_overlay_settings"
     private const val SERVICE_NAME = "cu.axel.smartdock/cu.axel.smartdock.services.DockService"
     private const val ENABLED_ACCESSIBILITY_SERVICES = "enabled_accessibility_services"

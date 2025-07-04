@@ -40,9 +40,6 @@ class MainActivity : AppCompatActivity() {
     private var isDeviceAdminEnabled = false
     private var settingsOverlaysAllowed = false
     override fun onCreate(savedInstanceState: Bundle?) {
-
-        //sharedPreferences.getBoolean("").
-
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)

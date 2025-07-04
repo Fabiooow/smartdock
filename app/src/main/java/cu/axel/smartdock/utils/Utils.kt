@@ -1,7 +1,6 @@
 package cu.axel.smartdock.utils
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.ImageDecoder
@@ -15,29 +14,11 @@ import android.os.Build
 import android.provider.MediaStore
 import android.view.Display
 import android.view.WindowManager
-import android.widget.Toast
-import androidx.preference.PreferenceManager
 import cu.axel.smartdock.R
-import java.io.BufferedReader
-import java.io.IOException
-import java.io.InputStream
-import java.io.InputStreamReader
-import java.io.OutputStream
-import java.text.SimpleDateFormat
-import java.util.Date
 
 object Utils {
-    var notificationPanelVisible = false
     var shouldPlayChargeComplete = false
     var startupTime: Long = 0
-
-    //public static int dockHeight;
-    fun toggleBuiltinNavigation(editor: SharedPreferences.Editor, value: Boolean) {
-        editor.putBoolean("enable_nav_back", false)
-        editor.putBoolean("enable_nav_home", false)
-        editor.putBoolean("enable_nav_recents", false)
-        editor.commit()
-    }
 
     fun dpToPx(context: Context, dp: Int): Int {
         return (dp * context.resources.displayMetrics.density + 0.5f).toInt()
@@ -154,79 +135,4 @@ object Utils {
             .toTypedArray()[0].toDouble() * expression.split("\\*".toRegex())
             .dropLastWhile { it.isEmpty() }.toTypedArray()[1].toDouble() else 0.0
     }
-
-    fun backupPreferences(context: Context, backupUri: Uri) {
-        val allPrefs = PreferenceManager.getDefaultSharedPreferences(context).all
-        val stringBuilder = StringBuilder()
-        for ((key, value) in allPrefs) {
-            var type = "string"
-            if (value is Boolean) {
-                type = "boolean"
-            } else if (value is Int) {
-                type = "integer"
-            }
-            if (value !is Set<*>)
-                stringBuilder.append(type).append(" ").append(key).append(" ")
-                    .append(value.toString()).append("\n")
-        }
-        val content = stringBuilder.toString().trim { it <= ' ' }
-        var outputStream: OutputStream? = null
-        try {
-            outputStream = context.contentResolver.openOutputStream(backupUri)
-            outputStream!!.write(content.toByteArray())
-            outputStream.flush()
-            Toast.makeText(context, R.string.preferences_saved, Toast.LENGTH_SHORT).show()
-        } catch (e: IOException) {
-            e.printStackTrace()
-        } finally {
-            if (outputStream != null) {
-                try {
-                    outputStream.close()
-                } catch (_: IOException) {
-                }
-            }
-        }
-    }
-
-    fun restorePreferences(context: Context, restoreUri: Uri) {
-        var inputStream: InputStream? = null
-        try {
-            inputStream = context.contentResolver.openInputStream(restoreUri)
-            val bufferedReader = BufferedReader(InputStreamReader(inputStream))
-            val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-            val editor = sharedPreferences.edit()
-
-            bufferedReader.readLines().forEach { line ->
-                val contents =
-                    line.split(" ".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                if (contents.size > 2) {
-                    val type = contents[0]
-                    val key = contents[1]
-                    val value = contents[2]
-                    when (type) {
-                        "boolean" -> editor.putBoolean(key, java.lang.Boolean.parseBoolean(value))
-                        "integer" -> editor.putInt(key, value.toInt())
-                        else -> editor.putString(key, value)
-                    }
-                }
-            }
-
-            bufferedReader.close()
-            editor.apply()
-            Toast.makeText(context, R.string.preferences_restored, Toast.LENGTH_SHORT).show()
-        } catch (e: IOException) {
-            e.printStackTrace()
-        } finally {
-            if (inputStream != null) {
-                try {
-                    inputStream.close()
-                } catch (e: IOException) {
-                    e.printStackTrace()
-                }
-            }
-        }
-    }
-
-    val currentDateString: String
-        get() = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(Date())
 }

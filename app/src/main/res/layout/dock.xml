@@ -32,16 +32,6 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/notifications_btn"
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:layout_margin="5dp"
-                android:background="@drawable/ic_expand_up_circle"
-                android:gravity="center"
-                android:padding="2dp"
-                android:textSize="12sp" />
-
             <ImageView
                 android:id="@+id/pin_btn"
                 android:layout_width="35dp"
@@ -50,42 +40,6 @@
                 android:background="@drawable/circle"
                 android:padding="8dp"
                 android:src="@drawable/ic_unpin" />
-
-            <ImageView
-                android:id="@+id/bluetooth_btn"
-                android:layout_width="35dp"
-                android:layout_height="35dp"
-                android:layout_margin="5dp"
-                android:background="@drawable/circle"
-                android:padding="5dp"
-                android:src="@drawable/ic_bluetooth_off" />
-
-            <ImageView
-                android:id="@+id/wifi_btn"
-                android:layout_width="35dp"
-                android:layout_height="35dp"
-                android:layout_margin="5dp"
-                android:background="@drawable/circle"
-                android:padding="8dp"
-                android:src="@drawable/ic_wifi_on" />
-
-            <ImageView
-                android:id="@+id/volume_btn"
-                android:layout_width="35dp"
-                android:layout_height="35dp"
-                android:layout_margin="5dp"
-                android:background="@drawable/circle"
-                android:padding="5dp"
-                android:src="@drawable/ic_volume" />
-
-            <TextView
-                android:drawableLeft="@drawable/battery_charging_full"
-                android:id="@+id/battery_btn"
-                android:layout_width="wrap_content"
-                android:layout_height="35dp"
-                android:gravity="center_vertical"
-                android:padding="5dp"
-                android:textColor="@android:color/white" />
 
             <TextClock
                 android:id="@+id/date_btn"
@@ -112,42 +66,6 @@
                 android:layout_margin="6dp"
                 android:src="@drawable/ic_apps_menu" />
 
-            <ImageView
-                android:id="@+id/back_btn"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_margin="6dp"
-                android:background="@drawable/circle"
-                android:padding="10dp"
-                android:src="@drawable/ic_back"
-                android:visibility="gone" />
-
-            <ImageView
-                android:id="@+id/home_btn"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_margin="6dp"
-                android:background="@drawable/circle"
-                android:padding="10dp"
-                android:src="@drawable/ic_home" />
-
-            <ImageView
-                android:id="@+id/recents_btn"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_margin="6dp"
-                android:background="@drawable/circle"
-                android:padding="10dp"
-                android:src="@drawable/ic_recents" />
-
-            <ImageView
-                android:id="@+id/assist_btn"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_margin="6dp"
-                android:background="@drawable/circle"
-                android:padding="8dp"
-                android:src="@drawable/ic_assistant" />
         </LinearLayout>
     </RelativeLayout>
 
