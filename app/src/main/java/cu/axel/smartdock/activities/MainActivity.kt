@@ -19,7 +19,6 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import cu.axel.smartdock.R
 import cu.axel.smartdock.dialogs.DockLayoutDialog
-import cu.axel.smartdock.services.NotificationService
 import cu.axel.smartdock.utils.ColorUtils
 import cu.axel.smartdock.utils.DeviceUtils
 import kotlin.reflect.KFunction0
@@ -41,6 +40,9 @@ class MainActivity : AppCompatActivity() {
     private var isDeviceAdminEnabled = false
     private var settingsOverlaysAllowed = false
     override fun onCreate(savedInstanceState: Bundle?) {
+
+        //sharedPreferences.getBoolean("").
+
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
@@ -175,11 +177,6 @@ class MainActivity : AppCompatActivity() {
         if (DeviceUtils.hasRecentAppsPermission(this)) {
             recentAppsBtn.setIconResource(R.drawable.ic_granted)
             recentAppsBtn.iconTint = ColorStateList.valueOf(ColorUtils.getThemeColors(this, false)[0])
-        }
-        if (DeviceUtils.isServiceRunning(this, NotificationService::class.java)) {
-            notificationsBtn.setIconResource(R.drawable.ic_settings)
-            notificationsBtn.iconTint =
-                ColorStateList.valueOf(ColorUtils.getThemeColors(this, false)[0])
         }
         isDeviceAdminEnabled = DeviceUtils.isDeviceAdminEnabled(this)
         if (isDeviceAdminEnabled) {

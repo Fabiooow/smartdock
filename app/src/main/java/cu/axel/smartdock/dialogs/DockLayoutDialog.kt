@@ -23,7 +23,7 @@ class DockLayoutDialog(context: Context) : MaterialAlertDialogBuilder(context) {
             editor.putBoolean("enable_qs_vol", which != 0)
             editor.putBoolean("enable_qs_date", which != 0)
             editor.putBoolean("enable_qs_notif", which != 0)
-            editor.putBoolean("app_menu_fullscreen", which != 2)
+            editor.putBoolean("app_menu_fullscreen", which != 0)
             editor.putString("launch_mode", if (which != 2) "fullscreen" else "standard")
             editor.putString(
                 "max_running_apps", when (which) {
