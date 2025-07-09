@@ -3,6 +3,6 @@
     android:id="@+id/dock_handle"
     android:layout_width="22dp"
     android:layout_height="match_parent"
-    android:background="@drawable/circle"
+    android:background="@drawable/ic_dock"
     android:drawableStart="@drawable/ic_expand_right"
     android:visibility="gone" />

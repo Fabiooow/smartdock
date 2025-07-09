@@ -41,13 +41,6 @@
                 android:padding="8dp"
                 android:src="@drawable/ic_unpin" />
 
-            <TextClock
-                android:id="@+id/date_btn"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="10dp"
-                android:layout_marginRight="10dp"
-                android:textColor="@android:color/white" />
         </LinearLayout>
 
         <LinearLayout
@@ -61,9 +54,10 @@
 
             <ImageView
                 android:id="@+id/apps_btn"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="70dp"
+                android:layout_height="50dp"
                 android:layout_margin="6dp"
+                android:background="#00FAFAFA"
                 android:src="@drawable/ic_apps_menu" />
 
         </LinearLayout>

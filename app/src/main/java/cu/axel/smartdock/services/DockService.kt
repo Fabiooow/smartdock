@@ -19,6 +19,7 @@ import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.content.pm.ActivityInfo
 import android.content.pm.LauncherApps
 import android.content.res.Configuration
+import android.graphics.drawable.LayerDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
@@ -155,6 +156,17 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         ).inflate(R.layout.dock, null) as HoverInterceptorLayout
         dockLayout = dock.findViewById(R.id.dock_layout)
         dockHandle = LayoutInflater.from(context).inflate(R.layout.dock_handle, null) as Button
+
+        val icon1 = ContextCompat.getDrawable(context, R.drawable.circle)
+        val icon2 = ContextCompat.getDrawable(context, R.drawable.ic_dock)
+
+        val layers = arrayOf(icon1, icon2)
+        val layerDrawable = LayerDrawable(layers)
+
+
+        dockHandle.background = layerDrawable
+
+
         appsBtn = dock.findViewById(R.id.apps_btn)
         tasksGv = dock.findViewById(R.id.apps_lv)
         val layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
@@ -498,13 +510,17 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
     fun pinDock() {
         isPinned = true
-        pinBtn.setImageResource(R.drawable.ic_pin)
+        pinBtn.setImageResource(R.drawable.arrow_down)
+        pinBtn.layoutParams.width = 50
+        pinBtn.layoutParams.height = 50
         if (dockLayout.visibility == View.GONE)
             showDock()
     }
 
     private fun unpinDock() {
-        pinBtn.setImageResource(R.drawable.ic_unpin)
+        pinBtn.setImageResource(R.drawable.arrow_up)
+        pinBtn.layoutParams.width = 50
+        pinBtn.layoutParams.height = 50
         isPinned = false
         if (dockLayout.visibility == View.VISIBLE)
             hideDock(500)
@@ -552,6 +568,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         rememberMode: Boolean = true
     ) {
         var launchMode = mode
+
         if (launchMode == null)
             launchMode = getDefaultLaunchMode(packageName)
         else
@@ -561,6 +578,8 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
                 ) && packageName != null
             )
                 db.saveLaunchMode(packageName, launchMode)
+
+        Log.i("Launch mode", launchMode.toString())
 
         val options = AppUtils.makeActivityOptions(context, launchMode, dockHeight, displayId)
 
@@ -640,7 +659,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
                 context, secondary
             )
             layoutParams.x = margins
-            layoutParams.y = margins + (dockHeight / 2)
+            layoutParams.y = margins + (dockHeight * 2)
             appsGv.layoutManager = GridLayoutManager(
                 context,
                 sharedPreferences.getString("num_columns", "5")!!.toInt()
@@ -874,7 +893,13 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         "com.example.myappum",
         "com.example.myapptres",
         "com.example.myappquatro",
-        "com.example.myappcinco"
+        "com.example.myappcinco",
+        "com.android.vending",
+        "com.google.android.gm",
+        "com.google.android.apps.maps",
+        "com.google.android.calendar",
+        "com.android.chrome",
+        "com.android.settings"
     )
 
     fun getForegroundApp() : String {
@@ -922,8 +947,10 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
         Log.i("OpenApp", foregroundApp)
 
+        //TODO - MUDAR O WHITELISTEDAPPS PARA UM ARRAY DE OBJETOS ONDE EU POSSO NUMA ESTROTURA DE DADOS TER AS APLICACOES QUE SAO PARA MOSTRAR NA DOCK E AS QUE PODEM SER ABERTAS
         if (!whiteListedApps.contains(foregroundApp)) {
-            launchApp("null", whiteListedApps[0])
+            Log.i("OpenApp", "E para abrir")
+            launchApp("fullscreen", whiteListedApps[7])
         }
     }
 
@@ -955,13 +982,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     }
 
     private fun updateDockShape() {
-        dockLayout.setBackgroundResource(
-            if (sharedPreferences.getBoolean(
-                    "round_dock",
-                    false
-                )
-            ) R.drawable.round_rect else R.drawable.rect
-        )
+        dockLayout.setBackgroundResource(R.drawable.rect)
         ColorUtils.applyMainColor(context, sharedPreferences, dockLayout)
     }
 
@@ -1019,24 +1040,20 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
 
     private fun updateHandlePositionValues() {
-        val position = sharedPreferences.getString("handle_position", "start")
-        handleLayoutParams.gravity =
-            Gravity.BOTTOM or Gravity.CENTER
-        if (position == "end") {
-            dockHandle.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                R.drawable.rect,
-                0,
-                0,
-                0
-            )
-        } else {
-            dockHandle.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                R.drawable.rect,
-                0,
-                0,
-                0
-            )
-        }
+        handleLayoutParams.gravity = Gravity.BOTTOM or Gravity.CENTER
+
+        handleLayoutParams.height = 35
+        handleLayoutParams.width = 35
+
+        handleLayoutParams.y = 10
+
+        dockHandle.setCompoundDrawablesRelativeWithIntrinsicBounds(
+            R.drawable.rect,
+            0,
+            0,
+            0
+        )
+
     }
 
     private fun updateHandlePosition() {

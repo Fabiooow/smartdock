@@ -18,7 +18,6 @@ import androidx.preference.PreferenceManager
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import cu.axel.smartdock.R
-import cu.axel.smartdock.dialogs.DockLayoutDialog
 import cu.axel.smartdock.utils.ColorUtils
 import cu.axel.smartdock.utils.DeviceUtils
 import kotlin.reflect.KFunction0
@@ -52,8 +51,6 @@ class MainActivity : AppCompatActivity() {
             )
         )
             showPermissionsDialog()
-        if (sharedPreferences.getInt("dock_layout", -1) == -1)
-            DockLayoutDialog(this)
     }
 
     override fun onResume() {

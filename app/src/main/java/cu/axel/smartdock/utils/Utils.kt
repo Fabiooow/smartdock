@@ -14,7 +14,6 @@ import android.os.Build
 import android.provider.MediaStore
 import android.view.Display
 import android.view.WindowManager
-import cu.axel.smartdock.R
 
 object Utils {
     var shouldPlayChargeComplete = false
@@ -67,30 +66,7 @@ object Utils {
     }
 
     fun getBatteryDrawable(level: Int, plugged: Boolean): Int {
-        if (plugged) {
-            when (level) {
-                0 -> return R.drawable.battery_charging_empty
-                in 1..29 -> return R.drawable.battery_charging_20
-                in 31..49 -> return R.drawable.battery_charging_30
-                in 51..59 -> return R.drawable.battery_charging_50
-                in 61..79 -> return R.drawable.battery_charging_60
-                in 81..89 -> return R.drawable.battery_charging_80
-                in 91..99 -> return R.drawable.battery_charging_90
-                100 -> return R.drawable.battery_charging_full
-            }
-        } else {
-            when (level) {
-                0 -> return R.drawable.battery_empty
-                in 1..29 -> return R.drawable.battery_20
-                in 31..49 -> return R.drawable.battery_30
-                in 51..59 -> return R.drawable.battery_50
-                in 61..79 -> return R.drawable.battery_60
-                in 81..89 -> return R.drawable.battery_80
-                in 91..99 -> return R.drawable.battery_90
-                100 -> return R.drawable.battery_full
-            }
-        }
-        return R.drawable.battery_empty
+        return 0
     }
 
     fun makeWindowParams(
