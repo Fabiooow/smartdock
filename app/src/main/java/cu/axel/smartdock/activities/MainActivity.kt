@@ -29,7 +29,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var overlayBtn: MaterialButton
     private lateinit var storageBtn: MaterialButton
     private lateinit var adminBtn: MaterialButton
-    private lateinit var notificationsBtn: MaterialButton
     private lateinit var accessibilityBtn: MaterialButton
     private lateinit var settingsOverlays: MaterialButton
     private lateinit var recentAppsBtn: MaterialButton
@@ -82,7 +81,6 @@ class MainActivity : AppCompatActivity() {
         overlayBtn = view.findViewById(R.id.btn_grant_overlay)
         storageBtn = view.findViewById(R.id.btn_grant_storage)
         adminBtn = view.findViewById(R.id.btn_grant_admin)
-        notificationsBtn = view.findViewById(R.id.btn_grant_notifications)
         accessibilityBtn = view.findViewById(R.id.btn_manage_service)
         settingsOverlays = view.findViewById(R.id.btn_manage_settings_overlays)
         recentAppsBtn = view.findViewById(R.id.btn_manage_recent_apps)
@@ -107,7 +105,6 @@ class MainActivity : AppCompatActivity() {
                 ::requestDeviceAdminPermissions, isDeviceAdminEnabled
             )
         }
-        notificationsBtn.setOnClickListener { showNotificationsDialog() }
         accessibilityBtn.setOnClickListener { showAccessibilityDialog() }
         settingsOverlays.setOnClickListener {
             showPermissionInfoDialog(
@@ -227,25 +224,6 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                 Toast.makeText(this, R.string.enable_access_help, Toast.LENGTH_LONG).show()
             }
-        }
-        dialogBuilder.setNeutralButton(R.string.help) { _, _ ->
-            startActivity(
-                Intent(
-                    Intent.ACTION_VIEW,
-                    Uri.parse("https://github.com/axel358/smartdock#grant-restricted-permissions")
-                )
-            )
-        }
-        dialogBuilder.show()
-    }
-
-    private fun showNotificationsDialog() {
-        val dialogBuilder = MaterialAlertDialogBuilder(this)
-        dialogBuilder.setTitle(R.string.notification_access)
-        dialogBuilder.setMessage(R.string.notification_access_desc)
-        dialogBuilder.setPositiveButton(R.string.manage) { _, _ ->
-            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-            Toast.makeText(this, R.string.enable_access_help, Toast.LENGTH_LONG).show()
         }
         dialogBuilder.setNeutralButton(R.string.help) { _, _ ->
             startActivity(

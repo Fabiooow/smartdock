@@ -6,7 +6,6 @@ import android.animation.AnimatorListenerAdapter
 import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.app.Notification
-import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
 import android.content.BroadcastReceiver
 import android.content.ClipData
@@ -79,8 +78,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.UnsupportedEncodingException
 import java.net.URLEncoder
-import java.util.SortedMap
-import java.util.TreeMap
 
 const val DOCK_SERVICE_CONNECTED = "service_connected"
 const val ACTION_LAUNCH_APP = "launch_app"
@@ -122,6 +119,21 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     private lateinit var handleLayoutParams: WindowManager.LayoutParams
     private lateinit var launcherApps: LauncherApps
     private var iconPackUtils: IconPackUtils? = null
+    private var isMaintenanceMode = false
+    private var isVolumePressed = false
+    private var isVolumeUpPressed = false
+    private var isVolumeDownPressed = false
+    private val longPressHandler = Handler(Looper.getMainLooper())
+    private val LONG_PRESS_DELAY = 15000L
+
+    private val longPressRunnable = Runnable {
+        if (isVolumePressed) {
+            Log.i("VolumeService", "Long press de 15 segundos detectado!")
+            executarMinhaFuncao()
+        }
+    }
+
+
     override fun onCreate() {
         super.onCreate()
         db = DBHelper(this)
@@ -136,10 +148,13 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         if (sharedPreferences.getString("icon_pack", "")!!.isNotEmpty()) {
             iconPackUtils = IconPackUtils(this)
         }
+
+        //Settings.System.putInt(
+        //    contentResolver,
+        //    Settings.System.SCREEN_OFF_TIMEOUT, -1)
     }
 
     override fun onServiceConnected() {
-        Log.i("Test", "executed")
         super.onServiceConnected()
         Utils.startupTime = System.currentTimeMillis()
         systemApp = AppUtils.isSystemApp(context, packageName)
@@ -163,9 +178,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         val layers = arrayOf(icon1, icon2)
         val layerDrawable = LayerDrawable(layers)
 
-
         dockHandle.background = layerDrawable
-
 
         appsBtn = dock.findViewById(R.id.apps_btn)
         tasksGv = dock.findViewById(R.id.apps_lv)
@@ -364,6 +377,54 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
             Toast.makeText(context, R.string.start_message, Toast.LENGTH_LONG).show()
     }
 
+    override fun onKeyEvent(event: KeyEvent): Boolean {
+        when (event.keyCode) {
+            KeyEvent.KEYCODE_VOLUME_UP, KeyEvent.KEYCODE_VOLUME_DOWN -> {
+                if (event.action == KeyEvent.ACTION_DOWN && !isVolumePressed) {
+                    isVolumePressed = true
+
+                    if (event.keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
+                        Log.i("VolumeService", "Botão volume UP pressionado")
+                        isVolumeUpPressed = true
+                    } else if (event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+                        Log.i("VolumeService", "Botão volume DOWN pressionado")
+                        isVolumeDownPressed = true
+                    }
+
+                    Log.i("VolumeService", "Volume pressionado. Iniciando timer de 15s.")
+                    longPressHandler.postDelayed(longPressRunnable, LONG_PRESS_DELAY)
+                }
+
+                if (event.action == KeyEvent.ACTION_UP) {
+                    Log.i("VolumeService", "Volume liberado. Cancelando.")
+                    longPressHandler.removeCallbacks(longPressRunnable)
+                    isVolumePressed = false
+                    isVolumeUpPressed = false
+                    isVolumeDownPressed = false
+                }
+                return true
+            }
+        }
+        return super.onKeyEvent(event)
+    }
+
+    private fun executarMinhaFuncao() {
+        if(isVolumeUpPressed){
+            Log.i("VolumeService", "Volume Up long press de 15 segundos.")
+            isMaintenanceMode = true
+            appsBtn.visibility = View.VISIBLE
+            showDock()
+        }
+
+        if(isVolumeDownPressed){
+            Log.i("VolumeService", "Volume Down long press de 15 segundos.")
+            isMaintenanceMode = false
+            appsBtn.visibility = View.GONE
+            checkAndLaunchDefaultApp()
+            hideDock(500)
+        }
+    }
+
     override fun onDockAppClicked(app: DockApp, anchor: View) {
         val tasks = app.tasks
         if (tasks.size == 1) {
@@ -413,6 +474,8 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     override fun onDockAppLongClicked(app: DockApp, view: View) {
         showDockAppContextMenu(app, view)
     }
+
+    override fun onInterrupt() {}
 
     override fun onAppClicked(app: App, item: View) {
         if (app.packageName == "$packageName.calc") {
@@ -479,12 +542,6 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         windowManager.addView(toast, layoutParams)
     }
 
-    override fun onInterrupt() {}
-
-    //Handle keyboard shortcuts
-    override fun onKeyEvent(event: KeyEvent): Boolean {
-        return super.onKeyEvent(event)
-    }
 
 
 
@@ -518,7 +575,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     }
 
     private fun unpinDock() {
-        pinBtn.setImageResource(R.drawable.arrow_up)
+        pinBtn.setImageResource(R.drawable.arrow_down)
         pinBtn.layoutParams.width = 50
         pinBtn.layoutParams.height = 50
         isPinned = false
@@ -578,8 +635,6 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
                 ) && packageName != null
             )
                 db.saveLaunchMode(packageName, launchMode)
-
-        Log.i("Launch mode", launchMode.toString())
 
         val options = AppUtils.makeActivityOptions(context, launchMode, dockHeight, displayId)
 
@@ -902,38 +957,23 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         "com.android.settings"
     )
 
-    fun getForegroundApp() : String {
-        var currentApp = "NULL"
-        // You can delete the if-else statement if you don't care about Android versions
-        // lower than 5.0. Just keep the code that is inside the if and delete the one
-        // inside the else statement.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            val usm = this.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-            val time = System.currentTimeMillis()
-            val appList =
-                usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, time - 1000 * 1000, time)
-            if (appList != null && appList.size > 0) {
-                val mySortedMap: SortedMap<Long, UsageStats> =
-                    TreeMap<Long, UsageStats>()
-                for (usageStats in appList) {
-                    mySortedMap.put(usageStats.lastTimeUsed, usageStats)
-                }
-                if (mySortedMap != null && !mySortedMap.isEmpty()) {
-                    currentApp = mySortedMap.get(mySortedMap.lastKey())!!.getPackageName()
-                }
-            }
-        } else {
-            val am = this.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-            val tasks = am.runningAppProcesses
-            currentApp = tasks[0].processName
-        }
-        // Get only the app name name
-        //return currentApp.split(".").last()
+    fun getForegroundApp(): String {
+        val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val time = System.currentTimeMillis()
+        val appList = usm.queryUsageStats(
+            UsageStatsManager.INTERVAL_DAILY,
+            time - 1000 * 10,
+            time
+        )
 
-        return currentApp
+        return if (!appList.isNullOrEmpty()) {
+            val sortedList = appList.sortedByDescending { it.lastTimeUsed }
+            sortedList[0].packageName
+        } else {
+            "null"
+        }
     }
 
-    //refazer para que nao esteja a correr que nem um cuazy
     var lastCheckedApp: String? = null
 
     fun checkAndLaunchDefaultApp() {
@@ -945,19 +985,16 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
         lastCheckedApp = foregroundApp
 
-        Log.i("OpenApp", foregroundApp)
-
-        //TODO - MUDAR O WHITELISTEDAPPS PARA UM ARRAY DE OBJETOS ONDE EU POSSO NUMA ESTROTURA DE DADOS TER AS APLICACOES QUE SAO PARA MOSTRAR NA DOCK E AS QUE PODEM SER ABERTAS
-        if (!whiteListedApps.contains(foregroundApp)) {
-            Log.i("OpenApp", "E para abrir")
-            launchApp("fullscreen", whiteListedApps[7])
+        if(!isMaintenanceMode){
+            if (!whiteListedApps.contains(foregroundApp)) {
+                launchApp("fullscreen", whiteListedApps[7])
+            }
         }
     }
 
-        private fun updateRunningTasks() {
+    private fun updateRunningTasks() {
 
         checkAndLaunchDefaultApp()
-
 
         val apps = ArrayList<DockApp>()
 
@@ -988,7 +1025,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
     private fun updateNavigationBar() {
         appsBtn.visibility =
-            if (sharedPreferences.getBoolean("enable_nav_apps", true)) View.VISIBLE else View.VISIBLE
+            if (isMaintenanceMode) View.VISIBLE else View.GONE
     }
 
     private fun updateQuickSettings() {
@@ -1037,14 +1074,10 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         appsSeparator.visibility = if (visible) View.VISIBLE else View.GONE
     }
 
-
-
     private fun updateHandlePositionValues() {
         handleLayoutParams.gravity = Gravity.BOTTOM or Gravity.CENTER
-
-        handleLayoutParams.height = 35
-        handleLayoutParams.width = 35
-
+        handleLayoutParams.height = 50
+        handleLayoutParams.width = 50
         handleLayoutParams.y = 10
 
         dockHandle.setCompoundDrawablesRelativeWithIntrinsicBounds(
@@ -1053,7 +1086,6 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
             0,
             0
         )
-
     }
 
     private fun updateHandlePosition() {
