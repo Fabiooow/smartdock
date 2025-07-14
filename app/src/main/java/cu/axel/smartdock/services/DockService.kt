@@ -180,6 +180,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
         dockHandle.background = layerDrawable
 
+
         appsBtn = dock.findViewById(R.id.apps_btn)
         tasksGv = dock.findViewById(R.id.apps_lv)
         val layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
@@ -188,11 +189,14 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         dock.setOnHoverListener { _, event ->
             if (event.action == MotionEvent.ACTION_HOVER_ENTER) {
                 if (dockLayout.visibility == View.GONE) showDock()
-            } else if (event.action == MotionEvent.ACTION_HOVER_EXIT) if (dockLayout.visibility == View.VISIBLE) {
-                hideDock(500)
+            } else if (event.action == MotionEvent.ACTION_HOVER_EXIT) if (dockLayout.visibility == View.GONE) {
+                //hideDock(500)
             }
             false
         }
+
+        dockLayout.visibility = View.GONE
+        dock.visibility = View.GONE
 
         dock.setOnTouchListener(this)
         dockLayout.setOnTouchListener(this)
@@ -372,7 +376,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         placeRunningApps()
         windowManager.addView(dockHandle, handleLayoutParams)
         if (sharedPreferences.getBoolean("pin_dock", true))
-            pinDock()
+            //pinDock()
         else
             Toast.makeText(context, R.string.start_message, Toast.LENGTH_LONG).show()
     }
@@ -943,19 +947,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     private fun loadPinnedApps() {}
 
 
-    val whiteListedApps = arrayOf(
-        "com.example.myappdois",
-        "com.example.myappum",
-        "com.example.myapptres",
-        "com.example.myappquatro",
-        "com.example.myappcinco",
-        "com.android.vending",
-        "com.google.android.gm",
-        "com.google.android.apps.maps",
-        "com.google.android.calendar",
-        "com.android.chrome",
-        "com.android.settings"
-    )
+    val whiteListedApps = arrayOf("com.google.android.apps.maps",)
 
     fun getForegroundApp(): String {
         val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
@@ -987,7 +979,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
         if(!isMaintenanceMode){
             if (!whiteListedApps.contains(foregroundApp)) {
-                launchApp("fullscreen", whiteListedApps[7])
+                launchApp("fullscreen", whiteListedApps[0])
             }
         }
     }
