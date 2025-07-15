@@ -422,6 +422,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         if(isVolumeDownPressed){
             Log.i("VolumeService", "Volume Down long press de 15 segundos.")
             isMaintenanceMode = false
+            dockHandle.visibility = View.GONE
             checkAndLaunchDefaultApp()
             hideDock(500)
         }
@@ -977,23 +978,6 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     }
 
     private fun updateRunningTasks() {
-
-        checkAndLaunchDefaultApp()
-
-        val apps = ArrayList<DockApp>()
-
-        val installedAppsUm = AppUtils.getInstalledApps(context)
-
-        installedAppsUm.forEach{app ->
-            if(whiteListedApps.contains(app.packageName)){
-                apps.add(DockApp(app.name, app.packageName, app.icon))
-            }
-        }
-
-        val gridSize = Utils.dpToPx(context, 52)
-
-        tasksGv.layoutParams.width = gridSize * apps.size
-        tasksGv.adapter = DockAppAdapter(context, apps, this, iconPackUtils)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
