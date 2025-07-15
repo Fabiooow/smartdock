@@ -124,7 +124,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     private var isVolumeUpPressed = false
     private var isVolumeDownPressed = false
     private val longPressHandler = Handler(Looper.getMainLooper())
-    private val LONG_PRESS_DELAY = 15000L
+    private val LONG_PRESS_DELAY = 3000L
 
     private val longPressRunnable = Runnable {
         if (isVolumePressed) {
@@ -186,14 +186,14 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         val layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
         tasksGv.layoutManager = layoutManager
         pinBtn = dock.findViewById(R.id.pin_btn)
-        dock.setOnHoverListener { _, event ->
-            if (event.action == MotionEvent.ACTION_HOVER_ENTER) {
-                if (dockLayout.visibility == View.GONE) showDock()
-            } else if (event.action == MotionEvent.ACTION_HOVER_EXIT) if (dockLayout.visibility == View.GONE) {
+        //dock.setOnHoverListener { _, event ->
+            //if (event.action == MotionEvent.ACTION_HOVER_ENTER) {
+                //if (dockLayout.visibility == View.GONE) showDock()
+            //} else if (event.action == MotionEvent.ACTION_HOVER_EXIT) if (dockLayout.visibility == View.GONE) {
                 //hideDock(500)
-            }
+            //}
             false
-        }
+        //}
 
         dockLayout.visibility = View.GONE
         dock.visibility = View.GONE
@@ -416,14 +416,12 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         if(isVolumeUpPressed){
             Log.i("VolumeService", "Volume Up long press de 15 segundos.")
             isMaintenanceMode = true
-            appsBtn.visibility = View.VISIBLE
             showDock()
         }
 
         if(isVolumeDownPressed){
             Log.i("VolumeService", "Volume Down long press de 15 segundos.")
             isMaintenanceMode = false
-            appsBtn.visibility = View.GONE
             checkAndLaunchDefaultApp()
             hideDock(500)
         }
@@ -556,6 +554,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     private fun showDock() {
         dock.visibility = View.VISIBLE
         dockHandle.visibility = View.GONE
+        appsBtn.visibility = View.VISIBLE
 
         if (dockLayoutParams.height != dockHeight) {
             dockLayoutParams.height = dockHeight
@@ -596,18 +595,11 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
                     override fun onAnimationStart(p1: Animation) {}
                     override fun onAnimationEnd(p1: Animation) {
                         dockLayout.visibility = View.GONE
-                        if (sharedPreferences.getString("activation_method", "swipe") == "swipe") {
-                            val height =
-                                sharedPreferences.getString("dock_activation_area", "10")!!.toInt()
-                            dockLayoutParams.height = Utils.dpToPx(context, height)
-                            windowManager.updateViewLayout(dock, dockLayoutParams)
-                            dockHandle.visibility = View.VISIBLE
-                        } else {
+                        if(isMaintenanceMode){
                             dock.visibility = View.GONE
                             dockHandle.visibility = View.VISIBLE
                         }
                     }
-
                     override fun onAnimationRepeat(p1: Animation) {}
                 })
                 dockLayout.startAnimation(animation)
