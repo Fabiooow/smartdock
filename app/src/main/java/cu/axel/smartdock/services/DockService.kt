@@ -60,7 +60,6 @@ import cu.axel.smartdock.activities.MainActivity
 import cu.axel.smartdock.adapters.AppAdapter
 import cu.axel.smartdock.adapters.AppAdapter.OnAppClickListener
 import cu.axel.smartdock.adapters.AppTaskAdapter
-import cu.axel.smartdock.adapters.DockAppAdapter
 import cu.axel.smartdock.adapters.DockAppAdapter.OnDockAppClickListener
 import cu.axel.smartdock.db.DBHelper
 import cu.axel.smartdock.models.App
@@ -72,6 +71,7 @@ import cu.axel.smartdock.utils.DeviceUtils
 import cu.axel.smartdock.utils.IconPackUtils
 import cu.axel.smartdock.utils.Utils
 import cu.axel.smartdock.widgets.HoverInterceptorLayout
+import io.socket.client.Socket
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -149,9 +149,36 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
             iconPackUtils = IconPackUtils(this)
         }
 
-        //Settings.System.putInt(
-        //    contentResolver,
-        //    Settings.System.SCREEN_OFF_TIMEOUT, -1)
+        SocketIOConnection.setSocket()
+        var con = SocketIOConnection.getSocket().connect()
+
+        //improve this code
+        con.on("resposta_do_servidor") { args ->
+            var resposta = args.joinToString()
+            println("Mensagem do servidor: ${resposta}")
+
+            if(resposta == "true"){
+                //config para admin mode
+                isVolumeUpPressed = true
+                isVolumeDownPressed = false
+
+            }
+
+            if(resposta == "false"){
+                //config to remove admin mode
+                isVolumeUpPressed = false
+                isVolumeDownPressed = true
+
+            }
+
+            Handler(Looper.getMainLooper()).post {
+                executarMinhaFuncao()
+            }
+
+
+        }
+
+        //Settings.System.putInt(contentResolver, Settings.System.SCREEN_OFF_TIMEOUT, -1)
     }
 
     override fun onServiceConnected() {
@@ -179,25 +206,13 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         val layerDrawable = LayerDrawable(layers)
 
         dockHandle.background = layerDrawable
-
-
         appsBtn = dock.findViewById(R.id.apps_btn)
         tasksGv = dock.findViewById(R.id.apps_lv)
         val layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
         tasksGv.layoutManager = layoutManager
         pinBtn = dock.findViewById(R.id.pin_btn)
-        //dock.setOnHoverListener { _, event ->
-            //if (event.action == MotionEvent.ACTION_HOVER_ENTER) {
-                //if (dockLayout.visibility == View.GONE) showDock()
-            //} else if (event.action == MotionEvent.ACTION_HOVER_EXIT) if (dockLayout.visibility == View.GONE) {
-                //hideDock(500)
-            //}
-            false
-        //}
-
         dockLayout.visibility = View.GONE
         dock.visibility = View.GONE
-
         dock.setOnTouchListener(this)
         dockLayout.setOnTouchListener(this)
         dockHandle.setOnClickListener { pinDock() }
@@ -354,8 +369,6 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
                 .putExtra("action", DOCK_SERVICE_CONNECTED)
         )
 
-
-
         ContextCompat.registerReceiver(
             this, object : BroadcastReceiver() {
                 override fun onReceive(p1: Context, intent: Intent) {
@@ -412,6 +425,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         return super.onKeyEvent(event)
     }
 
+    //toda a logica para entrar e sair do modo de manutencao
     private fun executarMinhaFuncao() {
         if(isVolumeUpPressed){
             Log.i("VolumeService", "Volume Up long press de 15 segundos.")

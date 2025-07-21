@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.provider.Settings
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -23,8 +24,10 @@ import androidx.preference.PreferenceManager
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import cu.axel.smartdock.R
+import cu.axel.smartdock.services.SocketIOConnection
 import cu.axel.smartdock.utils.ColorUtils
 import cu.axel.smartdock.utils.DeviceUtils
+import io.socket.client.Socket
 import kotlin.reflect.KFunction0
 
 
@@ -58,6 +61,8 @@ class MainActivity : AppCompatActivity() {
             )
         )
             showPermissionsDialog()
+
+
     }
 
     override fun onResume() {
