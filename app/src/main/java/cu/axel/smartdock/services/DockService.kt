@@ -37,8 +37,6 @@ import android.view.View.OnTouchListener
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.animation.AccelerateDecelerateInterpolator
-import android.view.animation.Animation
-import android.view.animation.AnimationUtils
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
@@ -71,7 +69,6 @@ import cu.axel.smartdock.utils.DeviceUtils
 import cu.axel.smartdock.utils.IconPackUtils
 import cu.axel.smartdock.utils.Utils
 import cu.axel.smartdock.widgets.HoverInterceptorLayout
-import io.socket.client.Socket
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -119,7 +116,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     private lateinit var handleLayoutParams: WindowManager.LayoutParams
     private lateinit var launcherApps: LauncherApps
     private var iconPackUtils: IconPackUtils? = null
-    private var isMaintenanceMode = false
+    //private var isMaintenanceMode = false
     private var isVolumePressed = false
     private var isVolumeUpPressed = false
     private var isVolumeDownPressed = false
@@ -149,31 +146,16 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
             iconPackUtils = IconPackUtils(this)
         }
 
-        SocketIOConnection.setSocket()
-        var con = SocketIOConnection.getSocket().connect()
+        SocketIOConnection.setSocket(context)
+        SocketIOConnection.setDockService(this)
+        val con = SocketIOConnection.getSocket().connect()
 
-        //improve this code
-        con.on("resposta_do_servidor") { args ->
-            var resposta = args.joinToString()
-            println("Mensagem do servidor: ${resposta}")
+        //tratar de todas as possiveis respostas do servidor
+        con.on("maintenance") { args ->
+            val resposta = args.joinToString()
+            Log.i("Server Responde", "Mensagem do servidor: ${resposta}")
 
-            if(resposta == "true"){
-                //config para admin mode
-                isVolumeUpPressed = true
-                isVolumeDownPressed = false
 
-            }
-
-            if(resposta == "false"){
-                //config to remove admin mode
-                isVolumeUpPressed = false
-                isVolumeDownPressed = true
-
-            }
-
-            Handler(Looper.getMainLooper()).post {
-                executarMinhaFuncao()
-            }
 
 
         }
@@ -225,7 +207,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
             true
         }
 
-        pinBtn.setOnClickListener { togglePin() }
+        pinBtn.setOnClickListener { hideDock() }
 
         dockLayoutParams = Utils.makeWindowParams(-1, dockHeight, context, secondary)
         dockLayoutParams.screenOrientation =
@@ -428,17 +410,15 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     //toda a logica para entrar e sair do modo de manutencao
     private fun executarMinhaFuncao() {
         if(isVolumeUpPressed){
-            Log.i("VolumeService", "Volume Up long press de 15 segundos.")
-            isMaintenanceMode = true
+            //isMaintenanceMode = true
             showDock()
         }
 
         if(isVolumeDownPressed){
-            Log.i("VolumeService", "Volume Down long press de 15 segundos.")
-            isMaintenanceMode = false
             dockHandle.visibility = View.GONE
             checkAndLaunchDefaultApp()
-            hideDock(500)
+            hideDock()
+            this.launchApp("fullscreen", whiteListedApps[0])
         }
     }
 
@@ -559,74 +539,33 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         windowManager.addView(toast, layoutParams)
     }
 
-
-
-
-    private fun togglePin() {
-        if (isPinned) unpinDock() else pinDock()
+    fun showDock() {
+        dock.visibility = View.VISIBLE
+        dockLayout.visibility = View.VISIBLE
     }
 
-    private fun showDock() {
-        dock.visibility = View.VISIBLE
-        dockHandle.visibility = View.GONE
-        appsBtn.visibility = View.VISIBLE
-
-        if (dockLayoutParams.height != dockHeight) {
-            dockLayoutParams.height = dockHeight
-            windowManager.updateViewLayout(dock, dockLayoutParams)
-        }
-
-        dockHandler.removeCallbacksAndMessages(null)
-        updateRunningTasks()
-        val anim = AnimationUtils.loadAnimation(context, R.anim.slide_up)
-        dockLayout.visibility = View.VISIBLE
-        dockLayout.startAnimation(anim)
+    fun hideDock() {
+        dock.visibility = View.GONE
+        dockLayout.visibility = View.GONE
     }
 
     fun pinDock() {
-        isPinned = true
         pinBtn.setImageResource(R.drawable.arrow_down)
         pinBtn.layoutParams.width = 50
         pinBtn.layoutParams.height = 50
-        if (dockLayout.visibility == View.GONE)
-            showDock()
     }
 
     private fun unpinDock() {
         pinBtn.setImageResource(R.drawable.arrow_down)
         pinBtn.layoutParams.width = 50
         pinBtn.layoutParams.height = 50
-        isPinned = false
-        if (dockLayout.visibility == View.VISIBLE)
-            hideDock(500)
-    }
-
-    private fun hideDock(delay: Int) {
-        dockHandler.removeCallbacksAndMessages(null)
-        dockHandler.postDelayed({
-            if (!isPinned) {
-                val animation = AnimationUtils.loadAnimation(context, R.anim.slide_down)
-                animation.setAnimationListener(object : Animation.AnimationListener {
-                    override fun onAnimationStart(p1: Animation) {}
-                    override fun onAnimationEnd(p1: Animation) {
-                        dockLayout.visibility = View.GONE
-                        if(isMaintenanceMode){
-                            dock.visibility = View.GONE
-                            dockHandle.visibility = View.VISIBLE
-                        }
-                    }
-                    override fun onAnimationRepeat(p1: Animation) {}
-                })
-                dockLayout.startAnimation(animation)
-            }
-        }, delay.toLong())
     }
 
     private fun getDefaultLaunchMode(app: String?): String {
         return "fullscreen"
     }
 
-    private fun launchApp(
+    fun launchApp(
         mode: String?,
         packageName: String?,
         intent: Intent? = null,
@@ -954,7 +893,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     private fun loadPinnedApps() {}
 
 
-    val whiteListedApps = arrayOf("com.google.android.apps.maps",)
+    val whiteListedApps = arrayOf("com.example.sporting_stream_app")
 
     fun getForegroundApp(): String {
         val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
@@ -984,7 +923,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
         lastCheckedApp = foregroundApp
 
-        if(!isMaintenanceMode){
+        if(dockLayout.visibility == View.GONE){
             if (!whiteListedApps.contains(foregroundApp)) {
                 launchApp("fullscreen", whiteListedApps[0])
             }
@@ -1006,8 +945,8 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     }
 
     private fun updateNavigationBar() {
-        appsBtn.visibility =
-            if (isMaintenanceMode) View.VISIBLE else View.GONE
+        appsBtn.visibility = View.VISIBLE
+            //if (isMaintenanceMode) View.VISIBLE else View.GONE
     }
 
     private fun updateQuickSettings() {
