@@ -1,17 +1,40 @@
 package cu.axel.smartdock.services
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.util.Base64
 import android.util.Log
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.google.gson.Gson
 import io.socket.client.IO
 import io.socket.client.Socket
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import java.net.URISyntaxException
+import cu.axel.smartdock.utils.AppUtils
+import cu.axel.smartdock.utils.Utils
+import org.json.JSONObject
+import java.io.ByteArrayOutputStream
+
+
+data class InstalledApp(
+    val appName: String,
+    val packageName: String,
+    val iconBase64: String
+)
+
+data class InstalledAppResponse(
+    val installedApp: MutableList<InstalledApp>
+)
+
 
 object SocketIOConnection {
 
@@ -45,7 +68,7 @@ object SocketIOConnection {
 
             Log.i("SocketIOConnection", "Usando appid na query: ${appId ?: "undefined"}")
 
-            mySocket = IO.socket("https://sporting-backend-production.up.railway.app", opts)
+            mySocket = IO.socket("http://192.168.1.71:3000", opts)
 
 
             mySocket.on(Socket.EVENT_CONNECT) {
@@ -92,7 +115,33 @@ object SocketIOConnection {
 
             }
 
+            mySocket.on("updateapps") { args ->
+                val apps = AppUtils.getInstalledApps(context)
 
+                val installedApps: MutableList<InstalledApp> = mutableListOf()
+
+                for (app in apps) {
+                    val installedApp = InstalledApp(
+                        appName = app.name,
+                        packageName = app.packageName,
+                        iconBase64 = drawableToBase64(app.icon)
+                    )
+                    installedApps.add(installedApp)
+                }
+
+                val installedAppsResponse = InstalledAppResponse(
+                    installedApp = installedApps
+                )
+
+                // Serializa para JSON usando Gson
+                val gson = Gson()
+                val json = gson.toJson(installedAppsResponse)
+                val jsonObject = JSONObject(json)
+
+                // Emite o objeto JSON no socket
+                mySocket.emit("update-apps-response", jsonObject)
+
+            }
         } catch (e: URISyntaxException) {
             e.printStackTrace()
         }
@@ -120,5 +169,27 @@ object SocketIOConnection {
 
     fun setDockService(service: DockService) {
         this.dockService = service
+    }
+
+    fun drawableToBase64(drawable: Drawable, format: Bitmap.CompressFormat = Bitmap.CompressFormat.PNG): String {
+        // 1. Converter para Bitmap
+        val bitmap = if (drawable is BitmapDrawable) {
+            drawable.bitmap
+        } else {
+            val width = drawable.intrinsicWidth.takeIf { it > 0 } ?: 1
+            val height = drawable.intrinsicHeight.takeIf { it > 0 } ?: 1
+            val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bmp)
+            drawable.setBounds(0, 0, canvas.width, canvas.height)
+            drawable.draw(canvas)
+            bmp
+        }
+
+        // 2. Converter para Base64
+        val outputStream = ByteArrayOutputStream()
+        bitmap.compress(format, 100, outputStream)
+        val byteArray = outputStream.toByteArray()
+
+        return Base64.encodeToString(byteArray, Base64.NO_WRAP)
     }
 }

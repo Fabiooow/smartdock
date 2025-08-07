@@ -148,17 +148,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
         SocketIOConnection.setSocket(context)
         SocketIOConnection.setDockService(this)
-        val con = SocketIOConnection.getSocket().connect()
-
-        //tratar de todas as possiveis respostas do servidor
-        con.on("maintenance") { args ->
-            val resposta = args.joinToString()
-            Log.i("Server Responde", "Mensagem do servidor: ${resposta}")
-
-
-
-
-        }
+        SocketIOConnection.getSocket().connect()
 
         //Settings.System.putInt(contentResolver, Settings.System.SCREEN_OFF_TIMEOUT, -1)
     }
