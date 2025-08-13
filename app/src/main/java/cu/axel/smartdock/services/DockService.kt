@@ -51,6 +51,7 @@ import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.transition.Visibility
 import cu.axel.smartdock.R
 import cu.axel.smartdock.activities.LAUNCHER_ACTION
 import cu.axel.smartdock.activities.LAUNCHER_RESUMED
@@ -58,6 +59,7 @@ import cu.axel.smartdock.activities.MainActivity
 import cu.axel.smartdock.adapters.AppAdapter
 import cu.axel.smartdock.adapters.AppAdapter.OnAppClickListener
 import cu.axel.smartdock.adapters.AppTaskAdapter
+import cu.axel.smartdock.adapters.DockAppAdapter
 import cu.axel.smartdock.adapters.DockAppAdapter.OnDockAppClickListener
 import cu.axel.smartdock.db.DBHelper
 import cu.axel.smartdock.models.App
@@ -88,6 +90,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     private lateinit var activityManager: ActivityManager
     private lateinit var appsBtn: ImageView
     private lateinit var pinBtn: ImageView
+    private lateinit var tasks: ArrayList<AppTask>
     private lateinit var topRightCorner: Button
     private lateinit var bottomRightCorner: Button
     private lateinit var dockHandle: Button
@@ -101,6 +104,8 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     private var isPinned = false
     private var systemApp = false
     private var secondary = false
+    var displayMode = "Kiosk"
+    private var lastUpdate: Long = 0
     private lateinit var dockLayoutParams: WindowManager.LayoutParams
     private lateinit var searchEt: EditText
     private lateinit var tasksGv: RecyclerView
@@ -116,7 +121,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     private lateinit var handleLayoutParams: WindowManager.LayoutParams
     private lateinit var launcherApps: LauncherApps
     private var iconPackUtils: IconPackUtils? = null
-    //private var isMaintenanceMode = false
+    private var isMaintenanceMode = false
     private var isVolumePressed = false
     private var isVolumeUpPressed = false
     private var isVolumeDownPressed = false
@@ -125,8 +130,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
     private val longPressRunnable = Runnable {
         if (isVolumePressed) {
-            Log.i("VolumeService", "Long press de 15 segundos detectado!")
-            executarMinhaFuncao()
+            volumeMaintenanceMode()
         }
     }
 
@@ -150,7 +154,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         SocketIOConnection.setDockService(this)
         SocketIOConnection.getSocket().connect()
 
-        //Settings.System.putInt(contentResolver, Settings.System.SCREEN_OFF_TIMEOUT, -1)
+        Settings.System.putInt(contentResolver, Settings.System.SCREEN_OFF_TIMEOUT, 999999999)
     }
 
     override fun onServiceConnected() {
@@ -197,7 +201,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
             true
         }
 
-        pinBtn.setOnClickListener { hideDock() }
+        pinBtn.setOnClickListener { unpinDock() }
 
         dockLayoutParams = Utils.makeWindowParams(-1, dockHeight, context, secondary)
         dockLayoutParams.screenOrientation =
@@ -397,20 +401,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         return super.onKeyEvent(event)
     }
 
-    //toda a logica para entrar e sair do modo de manutencao
-    private fun executarMinhaFuncao() {
-        if(isVolumeUpPressed){
-            //isMaintenanceMode = true
-            showDock()
-        }
 
-        if(isVolumeDownPressed){
-            dockHandle.visibility = View.GONE
-            checkAndLaunchDefaultApp()
-            hideDock()
-            this.launchApp("fullscreen", whiteListedApps[0])
-        }
-    }
 
     override fun onDockAppClicked(app: DockApp, anchor: View) {
         val tasks = app.tasks
@@ -529,27 +520,9 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         windowManager.addView(toast, layoutParams)
     }
 
-    fun showDock() {
-        dock.visibility = View.VISIBLE
-        dockLayout.visibility = View.VISIBLE
-    }
 
-    fun hideDock() {
-        dock.visibility = View.GONE
-        dockLayout.visibility = View.GONE
-    }
 
-    fun pinDock() {
-        pinBtn.setImageResource(R.drawable.arrow_down)
-        pinBtn.layoutParams.width = 50
-        pinBtn.layoutParams.height = 50
-    }
 
-    private fun unpinDock() {
-        pinBtn.setImageResource(R.drawable.arrow_down)
-        pinBtn.layoutParams.width = 50
-        pinBtn.layoutParams.height = 50
-    }
 
     private fun getDefaultLaunchMode(app: String?): String {
         return "fullscreen"
@@ -612,6 +585,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
                 pinDock()
         }
         updateRunningTasks()
+        this.hideDock()
     }
 
     private fun setOrientation() {
@@ -883,7 +857,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     private fun loadPinnedApps() {}
 
 
-    val whiteListedApps = arrayOf("com.example.sporting_stream_app")
+    val whiteListedApps = mutableListOf("com.SportingStreamApp")
 
     fun getForegroundApp(): String {
         val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
@@ -913,14 +887,117 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
         lastCheckedApp = foregroundApp
 
-        if(dockLayout.visibility == View.GONE){
-            if (!whiteListedApps.contains(foregroundApp)) {
-                launchApp("fullscreen", whiteListedApps[0])
-            }
+        if(!isMaintenanceMode && !whiteListedApps.contains(foregroundApp)){
+            launchApp("fullscreen", whiteListedApps[0])
         }
     }
 
-    private fun updateRunningTasks() {
+    fun openDefaultApp(){
+        this.launchApp("fullscreen", whiteListedApps[0])
+    }
+
+    public fun updateRunningTasks() {
+        val now = System.currentTimeMillis()
+        if (now - lastUpdate < 0)
+            return
+        lastUpdate = now
+
+        if(this.displayMode == "Free"){
+            val apps = ArrayList<DockApp>()
+
+
+            for(app in AppUtils.getInstalledApps(context)){
+                Log.i("Installed--App", app.packageName)
+                if (whiteListedApps.contains(app.packageName)){
+                    apps.add(DockApp(app.name, app.packageName, app.icon))
+                }
+            }
+
+            val gridSize = Utils.dpToPx(context, 52)
+
+            tasksGv.layoutParams.width = gridSize * apps.size
+            tasksGv.adapter = DockAppAdapter(context, apps, this, iconPackUtils)
+        }
+    }
+
+    private fun volumeMaintenanceMode() {
+        if (isVolumeUpPressed) {
+            setMaintenanceMode()
+        }
+        if (isVolumeDownPressed) {
+            removeMaintenanceMode()
+        }
+    }
+
+    fun setMaintenanceMode() {
+        isMaintenanceMode = true
+        showDock()
+
+    }
+
+    fun removeMaintenanceMode() {
+        isMaintenanceMode = false
+        appsBtn.visibility = View.GONE
+        setMode(displayMode)
+    }
+
+    fun showDock() {
+        dock.visibility = View.VISIBLE
+        dockLayout.visibility = View.VISIBLE
+        dockHandle.visibility = View.GONE
+
+        if(isMaintenanceMode){
+            appsBtn.visibility = View.VISIBLE
+        }
+    }
+
+    fun hideDock() {
+        dock.visibility = View.GONE
+        dockLayout.visibility = View.GONE
+
+        if(isMaintenanceMode){
+            appsBtn.visibility = View.GONE
+        }
+    }
+
+    fun pinDock() {
+        isPinned = true
+        pinBtn.setImageResource(R.drawable.arrow_down)
+        pinBtn.layoutParams.width = 50
+        pinBtn.layoutParams.height = 50
+        if(isMaintenanceMode || displayMode != "Kiosk"){
+            dockHandle.visibility = View.GONE
+            showDock()
+        }
+
+    }
+
+    private fun unpinDock() {
+        isPinned = false
+        hideDock()
+        pinBtn.setImageResource(R.drawable.arrow_down)
+        pinBtn.layoutParams.width = 50
+        pinBtn.layoutParams.height = 50
+        if(isMaintenanceMode || displayMode != "Kiosk"){
+            dockHandle.visibility = View.VISIBLE
+        }
+    }
+
+    fun setMode(mode: String) {
+        displayMode = mode
+
+        when (mode) {
+            "Kiosk" -> {
+                hideDock()
+                dockHandle.visibility = View.GONE
+                appsBtn.visibility = View.GONE
+                launchApp("fullscreen", whiteListedApps[0])
+            }
+            "Free" -> {
+                appsBtn.visibility = View.GONE
+                checkAndLaunchDefaultApp()
+            }
+        }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {

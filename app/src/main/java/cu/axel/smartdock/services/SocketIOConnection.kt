@@ -10,6 +10,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Base64
 import android.util.Log
+import android.view.View
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -44,6 +45,7 @@ object SocketIOConnection {
 
     val Context.dataStore by preferencesDataStore(name = "settings")
     val APPID_KEY = stringPreferencesKey("appid")
+    val DEFAULTAPP_KEY = stringPreferencesKey("defaultapp")
 
     @Synchronized
     fun getAppIdSync(context: Context): String? = runBlocking {
@@ -59,6 +61,20 @@ object SocketIOConnection {
     }
 
     @Synchronized
+    fun getDefaultAppSync(context: Context): String? = runBlocking {
+        val preferences = context.dataStore.data.first()
+        preferences[DEFAULTAPP_KEY]
+    }
+
+    @Synchronized
+    fun saveDefaultAppSync(context: Context, defaultApp: String) = runBlocking {
+        context.dataStore.edit { prefs ->
+            prefs[DEFAULTAPP_KEY] = defaultApp
+        }
+    }
+
+
+    @Synchronized
     fun setSocket(context: Context) {
         try {
             val opts = IO.Options()
@@ -68,7 +84,7 @@ object SocketIOConnection {
 
             Log.i("SocketIOConnection", "Usando appid na query: ${appId ?: "undefined"}")
 
-            mySocket = IO.socket("http://192.168.1.71:3000", opts)
+            mySocket = IO.socket("http://192.168.1.141:3001", opts)
 
 
             mySocket.on(Socket.EVENT_CONNECT) {
@@ -93,24 +109,52 @@ object SocketIOConnection {
                 mySocket.connect()
             }
 
-            mySocket.on("maintenance") { args ->
+            mySocket.on("isMaintanenceMode") { args ->
                 val resposta = args.joinToString()
-                Log.i("Server Responde", "Mensagem do servidor: ${resposta}")
-                if(resposta == "true"){
-                    //config para admin mode
-                    Handler(Looper.getMainLooper()).post {
-                        this.dockService.showDock()
-                    }
-
+                Log.i("Server Responde - mode", "Mensagem do servidor: ${resposta}")
+                Handler(Looper.getMainLooper()).post {
+                    this.dockService.setMode("Kiosk")
                 }
+            }
 
-                if(resposta == "false"){
-                    //config to remove admin mode
-                    Handler(Looper.getMainLooper()).post {
-                        this.dockService.hideDock()
-                        this.dockService.launchApp("fullscreen", this.dockService.whiteListedApps[0])
+            mySocket.on("kiosk-mode-app") { args ->
+                val resposta = args.joinToString()
+                Log.i("Server Responde-kiosk-mode-app", "Mensagem do servidor: ${resposta}")
+
+                Handler(Looper.getMainLooper()).post {
+                    this.dockService.setMode("Kiosk")
+                    this.dockService.whiteListedApps.clear()
+                    this.dockService.whiteListedApps.add(resposta)
+                }
+                this.dockService.openDefaultApp()
+
+            }
+
+            mySocket.on("free-mode-apps") { args ->
+                val resposta = args.joinToString()
+                Log.i("Server Responde-free-mode-apps", "Mensagem do servidor: ${resposta}")
+
+                Handler(Looper.getMainLooper()).post {
+                    this.dockService.setMode("Free")
+
+                    this.dockService.whiteListedApps.clear()
+                    for(app in resposta.split(",")){
+                        Log.i("App", "${app}")
+                        this.dockService.whiteListedApps.add(app)
+                        this.dockService.updateRunningTasks()
                     }
+                }
+            }
 
+
+            mySocket.on("default-app") { args ->
+                val resposta = args.joinToString()
+
+                Handler(Looper.getMainLooper()).post {
+                    this.dockService.hideDock()
+                    saveDefaultAppSync(context, resposta)
+                    this.dockService.whiteListedApps[0] = resposta
+                    this.dockService.launchApp("fullscreen", this.dockService.whiteListedApps[0])
                 }
 
             }

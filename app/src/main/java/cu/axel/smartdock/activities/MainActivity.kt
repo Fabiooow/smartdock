@@ -48,8 +48,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        startLockTask()
-
         setContentView(R.layout.activity_settings)
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
 
@@ -61,8 +59,6 @@ class MainActivity : AppCompatActivity() {
             )
         )
             showPermissionsDialog()
-
-
     }
 
     override fun onResume() {
