@@ -84,7 +84,7 @@ object SocketIOConnection {
 
             Log.i("SocketIOConnection", "Usando appid na query: ${appId ?: "undefined"}")
 
-            mySocket = IO.socket("http://192.168.1.141:3001", opts)
+            mySocket = IO.socket("http://192.168.1.221:3001", opts)
 
 
             mySocket.on(Socket.EVENT_CONNECT) {
@@ -113,7 +113,11 @@ object SocketIOConnection {
                 val resposta = args.joinToString()
                 Log.i("Server Responde - mode", "Mensagem do servidor: ${resposta}")
                 Handler(Looper.getMainLooper()).post {
-                    this.dockService.setMode("Kiosk")
+                    if(resposta == "false"){
+                        this.dockService.removeMaintenanceMode()
+                    }else{
+                        this.dockService.setMaintenanceMode()
+                    }
                 }
             }
 
@@ -125,8 +129,8 @@ object SocketIOConnection {
                     this.dockService.setMode("Kiosk")
                     this.dockService.whiteListedApps.clear()
                     this.dockService.whiteListedApps.add(resposta)
+                    this.dockService.openDefaultApp()
                 }
-                this.dockService.openDefaultApp()
 
             }
 
@@ -139,10 +143,12 @@ object SocketIOConnection {
 
                     this.dockService.whiteListedApps.clear()
                     for(app in resposta.split(",")){
-                        Log.i("App", "${app}")
                         this.dockService.whiteListedApps.add(app)
-                        this.dockService.updateRunningTasks()
                     }
+
+                    this.dockService.updateDockApps()
+                    this.dockService.openDefaultApp()
+                    this.dockService.pinDock()
                 }
             }
 
@@ -152,7 +158,6 @@ object SocketIOConnection {
 
                 Handler(Looper.getMainLooper()).post {
                     this.dockService.hideDock()
-                    saveDefaultAppSync(context, resposta)
                     this.dockService.whiteListedApps[0] = resposta
                     this.dockService.launchApp("fullscreen", this.dockService.whiteListedApps[0])
                 }

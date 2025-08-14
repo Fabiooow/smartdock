@@ -585,7 +585,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
                 pinDock()
         }
         updateRunningTasks()
-        this.hideDock()
+        this.unpinDock()
     }
 
     private fun setOrientation() {
@@ -857,7 +857,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     private fun loadPinnedApps() {}
 
 
-    val whiteListedApps = mutableListOf("com.SportingStreamApp")
+    val whiteListedApps = mutableListOf("")
 
     fun getForegroundApp(): String {
         val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
@@ -878,12 +878,10 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
     var lastCheckedApp: String? = null
 
-    fun checkAndLaunchDefaultApp() {
+    fun checkAndLaunchDefaultApp(force: Boolean = false) {
         val foregroundApp = getForegroundApp()
 
-        if (foregroundApp == lastCheckedApp) return  // evita repetição
-
-        unpinDock()
+        if (foregroundApp == lastCheckedApp && !force) return  // evita repetição
 
         lastCheckedApp = foregroundApp
 
@@ -896,18 +894,13 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         this.launchApp("fullscreen", whiteListedApps[0])
     }
 
-    public fun updateRunningTasks() {
-        val now = System.currentTimeMillis()
-        if (now - lastUpdate < 0)
-            return
-        lastUpdate = now
+    private fun updateRunningTasks() { }
 
+    fun updateDockApps() {
         if(this.displayMode == "Free"){
             val apps = ArrayList<DockApp>()
 
-
             for(app in AppUtils.getInstalledApps(context)){
-                Log.i("Installed--App", app.packageName)
                 if (whiteListedApps.contains(app.packageName)){
                     apps.add(DockApp(app.name, app.packageName, app.icon))
                 }
@@ -995,7 +988,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
             }
             "Free" -> {
                 appsBtn.visibility = View.GONE
-                checkAndLaunchDefaultApp()
+                checkAndLaunchDefaultApp(true)
             }
         }
     }
