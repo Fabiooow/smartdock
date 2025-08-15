@@ -109,7 +109,7 @@ object SocketIOConnection {
                 mySocket.connect()
             }
 
-            mySocket.on("isMaintanenceMode") { args ->
+            mySocket.on("maintanence-mode") { args ->
                 val resposta = args.joinToString()
                 Log.i("Server Responde - mode", "Mensagem do servidor: ${resposta}")
                 Handler(Looper.getMainLooper()).post {
@@ -164,7 +164,7 @@ object SocketIOConnection {
 
             }
 
-            mySocket.on("updateapps") { args ->
+            mySocket.on("update-apps") { args ->
                 val apps = AppUtils.getInstalledApps(context)
 
                 val installedApps: MutableList<InstalledApp> = mutableListOf()
