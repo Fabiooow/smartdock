@@ -84,7 +84,7 @@ object SocketIOConnection {
 
             Log.i("SocketIOConnection", "Usando appid na query: ${appId ?: "undefined"}")
 
-            mySocket = IO.socket("http://192.168.1.221:3001", opts)
+            mySocket = IO.socket("http://192.168.188.100:3001", opts)
 
 
             mySocket.on(Socket.EVENT_CONNECT) {
@@ -128,6 +128,7 @@ object SocketIOConnection {
                 Handler(Looper.getMainLooper()).post {
                     this.dockService.setMode("Kiosk")
                     this.dockService.whiteListedApps.clear()
+                    this.dockService.updateDockApps()
                     this.dockService.whiteListedApps.add(resposta)
                     this.dockService.openDefaultApp()
                 }
@@ -144,11 +145,24 @@ object SocketIOConnection {
                     this.dockService.whiteListedApps.clear()
                     for(app in resposta.split(",")){
                         this.dockService.whiteListedApps.add(app)
+                        this.dockService.updateDockApps()
                     }
 
                     this.dockService.updateDockApps()
                     this.dockService.openDefaultApp()
                     this.dockService.pinDock()
+                }
+            }
+
+            mySocket.on("sleep-mode") { args ->
+                Handler(Looper.getMainLooper()).post {
+                    this.dockService.setSleepMode()
+                }
+            }
+
+            mySocket.on("wake-mode") { args ->
+                Handler(Looper.getMainLooper()).post {
+                    this.dockService.setWakeMode()
                 }
             }
 

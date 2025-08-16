@@ -897,20 +897,30 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     private fun updateRunningTasks() { }
 
     fun updateDockApps() {
-        if(this.displayMode == "Free"){
-            val apps = ArrayList<DockApp>()
 
-            for(app in AppUtils.getInstalledApps(context)){
-                if (whiteListedApps.contains(app.packageName)){
-                    apps.add(DockApp(app.name, app.packageName, app.icon))
-                }
-            }
+        val apps = ArrayList<DockApp>()
 
-            val gridSize = Utils.dpToPx(context, 52)
+        val deviceApps = AppUtils.getInstalledApps(context)
 
-            tasksGv.layoutParams.width = gridSize * apps.size
-            tasksGv.adapter = DockAppAdapter(context, apps, this, iconPackUtils)
+
+
+        for(app in whiteListedApps){
+            val installedApp = deviceApps.find { it.packageName ==  app}
+            apps.add(DockApp(installedApp!!.name, installedApp.packageName, installedApp.icon))
         }
+
+        val gridSize = Utils.dpToPx(context, 52)
+
+        tasksGv.layoutParams.width = gridSize * apps.size
+        tasksGv.adapter = DockAppAdapter(context, apps, this, iconPackUtils)
+    }
+
+    fun setSleepMode(){
+        Settings.System.putInt(contentResolver, Settings.System.SCREEN_OFF_TIMEOUT, 5)
+    }
+
+    fun setWakeMode(){
+        Settings.System.putInt(contentResolver, Settings.System.SCREEN_OFF_TIMEOUT, 999999999)
     }
 
     private fun volumeMaintenanceMode() {
