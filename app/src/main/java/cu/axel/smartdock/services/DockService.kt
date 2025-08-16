@@ -23,6 +23,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
 import android.os.Process
 import android.provider.Settings
 import android.util.Log
@@ -921,6 +922,14 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
     fun setWakeMode(){
         Settings.System.putInt(contentResolver, Settings.System.SCREEN_OFF_TIMEOUT, 999999999)
+
+        val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+        val wl = pm.newWakeLock(
+            PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
+            "MyApp:WakeLock"
+        )
+        wl.acquire(999999999 * 1000L) // mantém o ecrã ligado por 3 segundos
+        wl.release()
     }
 
     private fun volumeMaintenanceMode() {
