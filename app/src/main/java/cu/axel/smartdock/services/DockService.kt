@@ -754,7 +754,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         ColorUtils.applySecondaryColor(context, sharedPreferences, icon)
         val text = view.findViewById<TextView>(R.id.pin_entry_tv)
         if (AppUtils.isPinned(context, app, AppUtils.DOCK_PINNED_LIST)) {
-            icon.setImageResource(R.drawable.ic_unpin)
+            icon.setImageResource(R.drawable.arrow_down)
             text.setText(R.string.unpin)
             val moveLayout = view.findViewById<LinearLayout>(R.id.pin_entry_move)
             moveLayout.visibility = View.VISIBLE
@@ -858,7 +858,7 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
     private fun loadPinnedApps() {}
 
 
-    val whiteListedApps = mutableListOf("")
+    val whiteListedApps = mutableListOf<String>("")
 
     fun getForegroundApp(): String {
         val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
@@ -886,7 +886,10 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
         lastCheckedApp = foregroundApp
 
-        if(!isMaintenanceMode && !whiteListedApps.contains(foregroundApp)){
+        Log.i("Apps-------", whiteListedApps.size.toString())
+        Log.i("Apps-------", whiteListedApps[0])
+
+        if(foregroundApp == "cu.axel.smartdock"){
             launchApp("fullscreen", whiteListedApps[0])
         }
     }
@@ -904,11 +907,13 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
         val deviceApps = AppUtils.getInstalledApps(context)
 
 
-
-        for(app in whiteListedApps){
-            val installedApp = deviceApps.find { it.packageName ==  app}
-            apps.add(DockApp(installedApp!!.name, installedApp.packageName, installedApp.icon))
+        if(whiteListedApps.size > 0 ){
+            for(app in whiteListedApps){
+                val installedApp = deviceApps.find { it.packageName ==  app}
+                apps.add(DockApp(installedApp!!.name, installedApp.packageName, installedApp.icon))
+            }
         }
+
 
         val gridSize = Utils.dpToPx(context, 52)
 

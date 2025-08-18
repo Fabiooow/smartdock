@@ -34,12 +34,12 @@
 
             <ImageView
                 android:id="@+id/pin_btn"
-                android:layout_width="35dp"
-                android:layout_height="35dp"
-                android:layout_margin="5dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_margin="20dp"
                 android:background="@drawable/circle"
-                android:padding="8dp"
-                android:src="@drawable/ic_unpin" />
+                android:padding="7dp"
+                android:src="@drawable/arrow_down" />
 
         </LinearLayout>
 

@@ -84,7 +84,7 @@ object SocketIOConnection {
 
             Log.i("SocketIOConnection", "Usando appid na query: ${appId ?: "undefined"}")
 
-            mySocket = IO.socket("http://192.168.188.100:3001", opts)
+            mySocket = IO.socket("https://sporting-backend-production.up.railway.app", opts)
 
 
             mySocket.on(Socket.EVENT_CONNECT) {
@@ -140,17 +140,24 @@ object SocketIOConnection {
                 Log.i("Server Responde-free-mode-apps", "Mensagem do servidor: ${resposta}")
 
                 Handler(Looper.getMainLooper()).post {
-                    this.dockService.setMode("Free")
+                    dockService.setMode("Free")
+                    dockService.whiteListedApps.clear()
 
-                    this.dockService.whiteListedApps.clear()
-                    for(app in resposta.split(",")){
-                        this.dockService.whiteListedApps.add(app)
-                        this.dockService.updateDockApps()
+                    val apps = resposta.split(",")
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() } // evita strings vazias
+
+                    for (app in apps) {
+                        dockService.whiteListedApps.add(app)
+                        dockService.updateDockApps()
                     }
 
-                    this.dockService.updateDockApps()
-                    this.dockService.openDefaultApp()
-                    this.dockService.pinDock()
+                    if (apps.isNotEmpty()) {
+                        dockService.updateDockApps()
+                        dockService.openDefaultApp()
+                    }
+
+                    dockService.pinDock()
                 }
             }
 
