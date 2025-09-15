@@ -37,6 +37,7 @@ open class LauncherActivity : AppCompatActivity(), OnAppClickListener,
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_launcher)
+
         val backgroundLayout = findViewById<LinearLayout>(R.id.ll_background)
 
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)

@@ -1,22 +1,12 @@
 package cu.axel.smartdock.activities
 
-import android.annotation.TargetApi
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.ColorStateList
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.provider.Settings
-import android.util.Log
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View
-import android.view.WindowInsets
-import android.view.WindowInsetsController
 import android.widget.Button
-import android.widget.Toast
 import android.widget.ViewSwitcher
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -24,14 +14,13 @@ import androidx.preference.PreferenceManager
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import cu.axel.smartdock.R
-import cu.axel.smartdock.services.SocketIOConnection
+import cu.axel.smartdock.services.Redis
 import cu.axel.smartdock.utils.ColorUtils
 import cu.axel.smartdock.utils.DeviceUtils
-import io.socket.client.Socket
 import kotlin.reflect.KFunction0
 
-
 class MainActivity : AppCompatActivity() {
+
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var permissionsDialog: AlertDialog
     private lateinit var overlayBtn: MaterialButton
@@ -41,24 +30,28 @@ class MainActivity : AppCompatActivity() {
     private lateinit var settingsOverlays: MaterialButton
     private lateinit var recentAppsBtn: MaterialButton
     private lateinit var secureBtn: MaterialButton
+
     private var canDrawOverOtherApps = false
     private var hasStoragePermission = false
     private var isDeviceAdminEnabled = false
     private var settingsOverlaysAllowed = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContentView(R.layout.activity_settings)
+
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
 
+        // Start Redis Service
+        startService(Intent(this, Redis::class.java))
+
+        // Pedir permissões iniciais se necessário
         if (!DeviceUtils.hasStoragePermission(this)) {
             DeviceUtils.requestStoragePermissions(this)
         }
-        if (!DeviceUtils.canDrawOverOtherApps(this) || !DeviceUtils.isAccessibilityServiceEnabled(
-                this
-            )
-        )
+        if (!DeviceUtils.canDrawOverOtherApps(this) || !DeviceUtils.isAccessibilityServiceEnabled(this)) {
             showPermissionsDialog()
+        }
     }
 
     override fun onResume() {
@@ -68,18 +61,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_main, menu)
-        return super.onCreateOptionsMenu(menu)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.action_grant_permissions -> showPermissionsDialog()
-        }
-        return super.onOptionsItemSelected(item)
-    }
-
     private fun showPermissionsDialog() {
         val builder = MaterialAlertDialogBuilder(this)
         builder.setTitle(R.string.manage_permissions)
@@ -87,6 +68,7 @@ class MainActivity : AppCompatActivity() {
         val viewSwitcher = view.findViewById<ViewSwitcher>(R.id.permissions_view_switcher)
         val requiredBtn = view.findViewById<Button>(R.id.show_required_button)
         val optionalBtn = view.findViewById<Button>(R.id.show_optional_button)
+
         overlayBtn = view.findViewById(R.id.btn_grant_overlay)
         storageBtn = view.findViewById(R.id.btn_grant_storage)
         adminBtn = view.findViewById(R.id.btn_grant_admin)
@@ -94,36 +76,47 @@ class MainActivity : AppCompatActivity() {
         settingsOverlays = view.findViewById(R.id.btn_manage_settings_overlays)
         recentAppsBtn = view.findViewById(R.id.btn_manage_recent_apps)
         secureBtn = view.findViewById(R.id.btn_manage_secure)
+
         builder.setView(view)
         permissionsDialog = builder.create()
+
         overlayBtn.setOnClickListener {
             showPermissionInfoDialog(
-                R.string.display_over_other_apps, R.string.display_over_other_apps_desc,
-                ::grantOverlayPermissions, canDrawOverOtherApps
+                R.string.display_over_other_apps,
+                R.string.display_over_other_apps_desc,
+                ::grantOverlayPermissions,
+                canDrawOverOtherApps
             )
         }
         storageBtn.setOnClickListener {
             showPermissionInfoDialog(
-                R.string.storage, R.string.storage_desc,
-                ::requestStoragePermissions, hasStoragePermission
+                R.string.storage,
+                R.string.storage_desc,
+                ::requestStoragePermissions,
+                hasStoragePermission
             )
         }
         adminBtn.setOnClickListener {
             showPermissionInfoDialog(
-                R.string.device_administrator, R.string.device_administrator_desc,
-                ::requestDeviceAdminPermissions, isDeviceAdminEnabled
+                R.string.device_administrator,
+                R.string.device_administrator_desc,
+                ::requestDeviceAdminPermissions,
+                isDeviceAdminEnabled
             )
         }
         accessibilityBtn.setOnClickListener { showAccessibilityDialog() }
         settingsOverlays.setOnClickListener {
             showPermissionInfoDialog(
-                R.string.overlays_in_settings, R.string.overlays_in_settings_desc,
-                null, true
+                R.string.overlays_in_settings,
+                R.string.overlays_in_settings_desc,
+                null,
+                true
             )
         }
         recentAppsBtn.setOnClickListener {
             showPermissionInfoDialog(
-                R.string.recent_apps, R.string.recent_apps_desc,
+                R.string.recent_apps,
+                R.string.recent_apps_desc,
                 ::requestRecentAppsPermission,
                 DeviceUtils.hasRecentAppsPermission(this)
             )
@@ -136,8 +129,10 @@ class MainActivity : AppCompatActivity() {
                 true
             )
         }
+
         requiredBtn.setOnClickListener { viewSwitcher.showPrevious() }
         optionalBtn.setOnClickListener { viewSwitcher.showNext() }
+
         updatePermissionsStatus()
         permissionsDialog.show()
     }
@@ -231,14 +226,13 @@ class MainActivity : AppCompatActivity() {
         } else {
             dialogBuilder.setPositiveButton(R.string.manage) { _, _ ->
                 startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                Toast.makeText(this, R.string.enable_access_help, Toast.LENGTH_LONG).show()
             }
         }
         dialogBuilder.setNeutralButton(R.string.help) { _, _ ->
             startActivity(
                 Intent(
                     Intent.ACTION_VIEW,
-                    Uri.parse("https://github.com/axel358/smartdock#grant-restricted-permissions")
+                    android.net.Uri.parse("https://github.com/axel358/smartdock#grant-restricted-permissions")
                 )
             )
         }

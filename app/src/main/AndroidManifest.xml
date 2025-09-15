@@ -79,6 +79,10 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service" />
         </service>
+        <service
+            android:name=".services.Redis"
+            android:enabled="true"
+            android:exported="false" />
 
         <receiver
             android:name="android.app.admin.DeviceAdminReceiver"

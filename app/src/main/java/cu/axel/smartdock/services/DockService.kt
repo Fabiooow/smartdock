@@ -886,9 +886,6 @@ class DockService : AccessibilityService(), OnSharedPreferenceChangeListener, On
 
         lastCheckedApp = foregroundApp
 
-        Log.i("Apps-------", whiteListedApps.size.toString())
-        Log.i("Apps-------", whiteListedApps[0])
-
         if(foregroundApp == "cu.axel.smartdock"){
             launchApp("fullscreen", whiteListedApps[0])
         }

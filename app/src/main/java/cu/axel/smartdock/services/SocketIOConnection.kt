@@ -15,6 +15,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.google.gson.Gson
+import cu.axel.smartdock.activities.MainActivity
 import io.socket.client.IO
 import io.socket.client.Socket
 import kotlinx.coroutines.flow.first
@@ -42,6 +43,8 @@ object SocketIOConnection {
     private lateinit var mySocket: Socket
 
     private lateinit var dockService: DockService
+
+    private lateinit var mainActivity: MainActivity
 
     val Context.dataStore by preferencesDataStore(name = "settings")
     val APPID_KEY = stringPreferencesKey("appid")
@@ -240,6 +243,12 @@ object SocketIOConnection {
     fun setDockService(service: DockService) {
         this.dockService = service
     }
+
+    fun setMain(service: MainActivity) {
+        this.mainActivity = service
+    }
+
+
 
     fun drawableToBase64(drawable: Drawable, format: Bitmap.CompressFormat = Bitmap.CompressFormat.PNG): String {
         // 1. Converter para Bitmap
